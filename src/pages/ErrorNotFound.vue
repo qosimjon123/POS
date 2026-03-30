@@ -1,23 +1,10 @@
 <template>
-  <div class="fullscreen bg-blue text-white text-center q-pa-md flex flex-center">
-    <div>
-      <div style="font-size: 30vh">404</div>
-
-      <div class="text-h2" style="opacity: 0.4">Oops. Nothing here...</div>
-
-      <q-btn
-        class="q-mt-xl"
-        color="white"
-        text-color="blue"
-        unelevated
-        to="/"
-        label="Go Home"
-        no-caps
-      />
-    </div>
-  </div>
+  <q-layout view="hHh lpR fFf">
+    <q-page-container class="flex flex-center">
+      <q-page class="column items-center q-gutter-y-md">
+        <div class="text-h3">404</div>
+        <q-btn unelevated outline to="/" label="Home" no-caps />
+      </q-page>
+    </q-page-container>
+  </q-layout>
 </template>
-
-<script setup lang="ts">
-//
-</script>
