@@ -1,0 +1,40 @@
+export default {
+  system: {
+    languageMenu: 'Выбор языка',
+    openSettings: 'Настройки сервера',
+    serverSettingsTitle: 'Адрес API',
+    serverUrlLabel: 'URL веб-сервера',
+    serverUrlPlaceholder: 'https://192.168.0.10:8080',
+    serverUrlHint: 'Базовый URL для HTTP-запросов (без завершающего /).',
+    serverUrlInvalid: 'Укажите корректный URL (http:// или https://).',
+    save: 'Сохранить',
+    cancel: 'Отмена',
+    connected: 'Соединение есть',
+    disconnected: 'Нет соединения',
+    useLightTheme: 'Светлая тема',
+    useDarkTheme: 'Тёмная тема',
+  },
+  login: {
+    modeSwitchLabel: 'Способ входа',
+    modeQr: 'QR + PIN',
+    modeEmail: 'Логин и пароль',
+    scannerReady: 'Сканер готов',
+    scannerHint: 'Поднесите QR-код из приложения',
+    shieldHint:
+      'После сканирования сессия активна 2 минуты и допускает до 5 попыток ввода.',
+    pinLockedTitle: 'ПИН-код будет доступен после сканирования',
+    dividerOr: 'Или',
+    standardLogin: 'Стандартный вход',
+    standardLoginSubtitle:
+      'Резервный вариант для администратора или пользователя без QR/PIN.',
+    loginLabel: 'Логин',
+    passwordLabel: 'Пароль',
+    rememberSession: 'Запомнить сессию',
+    signIn: 'Войти',
+    adminNote:
+      'Используется как резервный способ входа через стандартную авторизацию.',
+    required: 'Обязательное поле',
+    showPassword: 'Показать пароль',
+    hidePassword: 'Скрыть пароль',
+  },
+};

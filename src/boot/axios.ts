@@ -1,5 +1,8 @@
 import { defineBoot } from '#q-app/wrappers';
 import axios, { type AxiosInstance } from 'axios';
+import { LocalStorage } from 'quasar';
+
+import { SERVER_BASE_URL_STORAGE_KEY } from 'src/config/server';
 
 declare module 'vue' {
   interface ComponentCustomProperties {
@@ -8,13 +11,14 @@ declare module 'vue' {
   }
 }
 
-// Be careful when using SSR for cross-request state pollution
-// due to creating a Singleton instance here;
-// If any client changes this (global) instance, it might be a
-// good idea to move this instance creation inside of the
-// "export default () => {}" function below (which runs individually
-// for each client)
-const api = axios.create({ baseURL: 'https://api.example.com' });
+function normalizeBaseUrl(raw: string): string {
+  return raw.trim().replace(/\/+$/, '');
+}
+
+const savedBase = LocalStorage.getItem<string>(SERVER_BASE_URL_STORAGE_KEY);
+const api = axios.create({
+  baseURL: savedBase ? normalizeBaseUrl(savedBase) : '',
+});
 
 export default defineBoot(({ app }) => {
   // for use inside Vue files (Options API) through this.$axios and this.$api

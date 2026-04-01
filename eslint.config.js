@@ -79,5 +79,12 @@ export default defineConfigWithVueTs(
     },
   },
 
+  {
+    files: ['src/pages/Login.vue'],
+    rules: {
+      'vue/multi-word-component-names': 'off',
+    },
+  },
+
   prettierSkipFormatting,
 );

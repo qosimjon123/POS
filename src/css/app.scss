@@ -1,1 +1,39 @@
-// app global css in SCSS form
+// Design tokens: monochrome UI + semantic accents (success / error) for status.
+:root {
+  --rp-background: #f5f5f5;
+  --rp-foreground: #111111;
+  --rp-border: #d6d6d6;
+  --rp-input: #ffffff;
+  --rp-primary: #1a1a1a;
+  --rp-primary-foreground: #ffffff;
+  --rp-secondary: #ebebeb;
+  --rp-secondary-foreground: #3a3a3a;
+  --rp-muted: #f0f0f0;
+  --rp-muted-foreground: #7a7a7a;
+  --rp-card: #ffffff;
+  --rp-success: #1f7a34;
+  --rp-success-foreground: #1f7a34;
+  --rp-negative: #c0392b;
+}
+
+.body--dark {
+  --rp-background: #121212;
+  --rp-foreground: #f5f5f5;
+  --rp-border: #3a3a3a;
+  --rp-input: #1e1e1e;
+  --rp-primary: #f5f5f5;
+  --rp-primary-foreground: #111111;
+  --rp-secondary: #2a2a2a;
+  --rp-secondary-foreground: #d0d0d0;
+  --rp-muted: #1a1a1a;
+  --rp-muted-foreground: #a0a0a0;
+  --rp-card: #1e1e1e;
+  --rp-success: #4caf50;
+  --rp-success-foreground: #81c784;
+  --rp-negative: #ef5350;
+}
+
+body {
+  background: var(--rp-background);
+  color: var(--rp-foreground);
+}

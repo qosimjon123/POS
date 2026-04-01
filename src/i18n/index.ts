@@ -1,5 +1,7 @@
-import enUS from './en-US';
+import ruRU from './ru-RU';
+import tgTJ from './tg-TJ';
 
 export default {
-  'en-US': enUS,
+  'ru-RU': ruRU,
+  'tg-TJ': tgTJ,
 };
