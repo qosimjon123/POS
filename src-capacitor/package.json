@@ -1,0 +1,13 @@
+{
+  "name": "restropos",
+  "version": "0.0.1",
+  "description": "POS system by FadlTech team",
+  "author": "pentester <python.malaysia.life@mail.ru>",
+  "private": true,
+  "dependencies": {
+    "@capacitor/android": "^8.3.0",
+    "@capacitor/app": "^8.0.0",
+    "@capacitor/cli": "^8.3.0",
+    "@capacitor/core": "^8.3.0"
+  }
+}
