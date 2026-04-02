@@ -1,118 +1,74 @@
 <template>
   <section class="rp-qr-section" aria-labelledby="qr-login-heading">
-    <div class="rp-two-col">
+    <!-- Desktop / tablet: две колонки как раньше -->
+    <div v-if="!isMobile" class="rp-two-col">
       <div class="rp-col-left">
-        <div class="rp-scanner-status">
-          <div class="rp-scanner-icon">
-            <q-icon name="qr_code_2" size="32px" class="rp-icon-fg" />
-            <span
-              class="rp-status-dot"
-              :class="scannerReady ? 'rp-status-dot--ok' : 'rp-status-dot--bad'"
-              aria-hidden="true"
-            />
-          </div>
-          <div>
-            <h2 id="qr-login-heading" class="rp-scanner-title">
-              {{ t('login.scannerReady') }}
-            </h2>
-            <p class="rp-scanner-desc">{{ t('login.scannerHint') }}</p>
-          </div>
-        </div>
-
-        <div class="rp-hint-row row no-wrap items-start">
-          <q-icon
-            name="verified_user"
-            size="24px"
-            class="rp-hint-icon q-mt-xs"
-          />
-          <span>{{ t('login.shieldHint') }}</span>
-        </div>
+        <QrLoginScanPanel />
       </div>
-
-      <div class="rp-pin-card column">
-        <div class="rp-pin-head">
-          <div class="rp-pin-title-wrap">
-            <p class="rp-pin-title">{{ t('login.pinLockedTitle') }}</p>
-          </div>
-          <div class="rp-lock-badge flex flex-center">
-            <q-icon name="lock" size="24px" class="rp-icon-muted" />
-          </div>
-        </div>
-
-        <div class="rp-pin-dots row justify-center">
-          <span
-            v-for="i in 4"
-            :key="i"
-            class="rp-pin-dot"
-            :class="{
-              'rp-pin-dot--filled': scanned && pin.length >= i,
-            }"
-          />
-        </div>
-
-        <div
-          class="rp-numpad"
-          :class="{ 'rp-numpad--disabled': !scanned }"
-        >
-          <button
-            v-for="n in numKeys"
-            :key="n.key"
-            type="button"
-            class="rp-num-btn"
-            :class="{
-              'rp-num-btn--empty': n.key === 'empty',
-              'rp-num-btn--action': n.key === 'back',
-            }"
-            :disabled="!scanned || n.key === 'empty'"
-            @click="onNumKey(n.key)"
-          >
-            <template v-if="n.key === 'back'">
-              <q-icon name="backspace" size="28px" class="rp-icon-fg" />
-            </template>
-            <template v-else-if="n.key !== 'empty'">{{ n.label }}</template>
-          </button>
-        </div>
-      </div>
+      <QrLoginPinPanel v-model:pin="pin" :scanned="scanned" />
     </div>
+
+    <!-- Телефон: горизонтальный stepper — шаг 1 QR, шаг 2 PIN после сканирования -->
+    <q-stepper
+      v-else
+      v-model="mobileStep"
+      flat
+      bordered
+      alternative-labels
+      class="rp-qr-stepper"
+      color="primary"
+      :dark="$q.dark.isActive"
+      :header-nav="false"
+      animated
+    >
+      <q-step
+        :name="1"
+        :title="t('login.mobileStepQrTitle')"
+        icon="qr_code_scanner"
+        :done="scanned"
+      >
+        <QrLoginScanPanel />
+      </q-step>
+      <q-step :name="2" :title="t('login.mobileStepPinTitle')" icon="lock">
+        <QrLoginPinPanel v-model:pin="pin" :scanned="scanned" />
+      </q-step>
+    </q-stepper>
   </section>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref, watch } from 'vue';
+import { useQuasar } from 'quasar';
 import { useI18n } from 'vue-i18n';
 
+import { useScannerStore } from 'src/stores/scanner';
+
+import QrLoginPinPanel from './QrLoginPinPanel.vue';
+import QrLoginScanPanel from './QrLoginScanPanel.vue';
+
 const { t } = useI18n();
+const $q = useQuasar();
 
-/** Replace with real scanner / session state when integrating hardware or API. */
+/** Только телефон (< 600px); планшет и десктоп — прежняя вёрстка */
+const isMobile = computed(() => $q.screen.lt.sm);
+
+const scanner = useScannerStore();
 const scanned = ref(false);
-const scannerReady = ref(true);
-
 const pin = ref('');
+const mobileStep = ref(1);
 
-const numKeys = [
-  { key: '1', label: '1' },
-  { key: '2', label: '2' },
-  { key: '3', label: '3' },
-  { key: '4', label: '4' },
-  { key: '5', label: '5' },
-  { key: '6', label: '6' },
-  { key: '7', label: '7' },
-  { key: '8', label: '8' },
-  { key: '9', label: '9' },
-  { key: 'empty', label: '' },
-  { key: '0', label: '0' },
-  { key: 'back', label: '' },
-] as const;
+watch(
+  () => scanner.lastResult,
+  (r) => {
+    if (r?.value) scanned.value = true;
+  },
+);
 
-function onNumKey(key: string) {
-  if (!scanned.value) return;
-  if (key === 'back') {
-    pin.value = pin.value.slice(0, -1);
-    return;
+watch([scanned, isMobile], () => {
+  if (scanned.value && isMobile.value) {
+    mobileStep.value = 2;
   }
-  if (pin.value.length >= 4) return;
-  pin.value += key;
-}
+});
 </script>
 
 <style scoped lang="scss">
@@ -136,7 +92,6 @@ function onNumKey(key: string) {
   flex-direction: column;
   min-width: 0;
   min-height: 0;
-  gap: 16px;
 }
 
 @media (max-width: 1023px) {
@@ -145,228 +100,86 @@ function onNumKey(key: string) {
     flex-direction: column;
     gap: 16px;
   }
-
-  .rp-col-left {
-    display: contents;
-  }
-
-  .rp-scanner-status {
-    order: 1;
-  }
-
-  .rp-pin-card {
-    order: 2;
-  }
-
-  .rp-hint-row {
-    order: 3;
-  }
 }
 
-.rp-scanner-status {
-  flex: 1 1 auto;
-  min-width: 0;
-  min-height: 0;
-  background: var(--rp-secondary);
-  border-radius: 12px;
-  padding: 38px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 23px;
-}
-
-.rp-scanner-icon {
-  width: 62px;
-  height: 62px;
-  background: var(--rp-card);
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-}
-
-.rp-status-dot {
-  position: absolute;
-  top: -5px;
-  right: -5px;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  border: 3px solid var(--rp-secondary);
-}
-
-.rp-status-dot--ok {
-  background: var(--rp-success);
-}
-
-.rp-status-dot--bad {
-  background: var(--rp-negative);
-}
-
-.rp-scanner-title {
-  margin: 0 0 12px;
-  font-size: 24px;
-  font-weight: 600;
-  color: var(--rp-foreground);
-  line-height: 1.2;
-}
-
-.rp-scanner-desc {
-  margin: 0;
-  font-size: 16px;
-  color: var(--rp-secondary-foreground);
-  line-height: 1.5;
-}
-
-.rp-hint-row {
-  flex-shrink: 0;
-  min-width: 0;
-  gap: 15px;
-  color: var(--rp-muted-foreground);
-  font-size: 15px;
-  font-weight: 500;
-  line-height: 1.5;
-  background: var(--rp-card);
-  padding: 24px;
-  border-radius: 12px;
-  width: 100%;
-}
-
-.rp-hint-icon {
-  color: var(--rp-success-foreground);
-  flex-shrink: 0;
-}
-
-.rp-pin-card {
-  min-width: 0;
+.rp-qr-stepper {
   width: 100%;
   max-width: 100%;
-  height: 100%;
-  background: var(--rp-muted);
-  border-radius: 12px;
-  padding: 46px;
-  box-sizing: border-box;
-  overflow-x: hidden;
-}
-
-.rp-pin-head {
-  display: flex;
-  flex-direction: row;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 38px;
   min-width: 0;
-}
-
-.rp-pin-title-wrap {
-  flex: 1 1 0;
-  min-width: 0;
-}
-
-.rp-pin-title {
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--rp-foreground);
-  margin: 0;
-  line-height: 1.35;
-  overflow-wrap: anywhere;
-  hyphens: auto;
-}
-
-.rp-lock-badge {
-  flex-shrink: 0;
-  width: 46px;
-  min-width: 46px;
-  height: 46px;
-  border-radius: 23px;
   background: var(--rp-card);
-}
+  border-radius: 16px;
+  border-color: var(--rp-border) !important;
+  box-shadow: none;
+  overflow: hidden;
 
-.rp-pin-dots {
-  flex-wrap: wrap;
-  gap: clamp(12px, 4vw, 30px);
-  margin-bottom: 42px;
-  opacity: 0.55;
-}
+  :deep(.q-stepper__header) {
+    border-radius: 0;
+    background: var(--rp-secondary);
+    border-bottom: 1px solid var(--rp-border);
+  }
 
-.rp-pin-dot {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  border: 2px solid var(--rp-muted-foreground);
-  background: transparent;
-}
+  :deep(.q-stepper__header--alternative-labels .q-stepper__tab) {
+    min-height: 76px;
+    padding: 10px 12px 14px;
+    flex: 1;
+  }
 
-.rp-pin-dot--filled {
-  background: var(--rp-foreground);
-  border-color: var(--rp-foreground);
-}
+  :deep(.q-stepper__label) {
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.25;
+    text-align: center;
+    max-width: 140px;
+    margin-top: 6px;
+  }
 
-.rp-numpad {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  width: 100%;
-  max-width: 100%;
-  gap: clamp(10px, 3vw, 21px) clamp(10px, 4vw, 30px);
-  justify-items: center;
-  justify-content: center;
-  margin-top: auto;
-  box-sizing: border-box;
-}
+  :deep(.q-stepper__dot) {
+    font-size: 13px;
+  }
 
-.rp-numpad--disabled {
-  opacity: 0.42;
-  pointer-events: none;
-}
+  :deep(.q-stepper__tab) {
+    color: var(--rp-muted-foreground);
+  }
 
-.rp-num-btn {
-  box-sizing: border-box;
-  width: 100%;
-  max-width: 85px;
-  aspect-ratio: 1;
-  height: auto;
-  border-radius: 50%;
-  border: none;
-  background: var(--rp-secondary);
-  color: var(--rp-foreground);
-  font-size: clamp(22px, 7vw, 34px);
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
+  :deep(.q-stepper__tab--active),
+  :deep(.q-stepper__tab--done) {
+    color: var(--rp-primary);
+  }
 
-.rp-num-btn:disabled {
-  cursor: default;
-}
+  :deep(.q-stepper__tab--active .q-stepper__label),
+  :deep(.q-stepper__tab--done .q-stepper__label) {
+    color: var(--rp-foreground);
+  }
 
-.rp-num-btn--empty {
-  background: transparent;
-}
+  :deep(.q-stepper__tab--disabled .q-stepper__label) {
+    color: var(--rp-muted-foreground);
+    opacity: 0.65;
+  }
 
-.rp-num-btn--action {
-  background: transparent;
-}
+  :deep(.q-stepper__step-inner) {
+    padding: 12px 12px 20px;
+  }
 
-.rp-icon-fg {
-  color: var(--rp-foreground);
-}
+  :deep(.q-stepper__line:before),
+  :deep(.q-stepper__line:after) {
+    background: var(--rp-border) !important;
+  }
 
-.rp-icon-muted {
-  color: var(--rp-muted-foreground);
-}
+  :deep(.rp-scan-stack) {
+    gap: 12px;
+  }
 
-@media (max-width: 480px) {
-  .rp-pin-card {
+  :deep(.rp-scanner-status) {
+    padding: 20px 16px;
+  }
+
+  :deep(.rp-hint-row) {
+    padding: 16px;
+    font-size: 14px;
+  }
+
+  :deep(.rp-pin-card) {
     padding: 24px 16px;
-  }
-
-  .rp-pin-head {
-    margin-bottom: 28px;
   }
 }
 </style>

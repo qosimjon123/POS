@@ -77,8 +77,12 @@ const loginMode = ref<'qr' | 'email'>('qr');
 }
 
 .rp-login-toolbar {
-  padding: 24px 48px;
+  box-sizing: border-box;
   width: 100%;
+  padding-top: max(24px, env(safe-area-inset-top, 0px));
+  padding-right: max(48px, env(safe-area-inset-right, 0px));
+  padding-bottom: 24px;
+  padding-left: max(48px, env(safe-area-inset-left, 0px));
 }
 
 .rp-toolbar-gap {
@@ -86,7 +90,11 @@ const loginMode = ref<'qr' | 'email'>('qr');
 }
 
 .rp-login-main {
-  padding: 10px 48px 80px;
+  box-sizing: border-box;
+  padding-top: 10px;
+  padding-right: max(48px, env(safe-area-inset-right, 0px));
+  padding-bottom: max(80px, env(safe-area-inset-bottom, 0px));
+  padding-left: max(48px, env(safe-area-inset-left, 0px));
 }
 
 .rp-login-wrap {
@@ -138,13 +146,19 @@ const loginMode = ref<'qr' | 'email'>('qr');
 
 @media (max-width: 599px) {
   .rp-login-toolbar {
-    padding: 16px 16px;
+    padding-top: max(16px, env(safe-area-inset-top, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-bottom: 16px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
     flex-wrap: wrap;
     gap: 12px;
   }
 
   .rp-login-main {
-    padding: 16px 16px 48px;
+    padding-top: 16px;
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-bottom: max(48px, env(safe-area-inset-bottom, 0px));
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
   }
 }
 </style>

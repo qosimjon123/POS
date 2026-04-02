@@ -15,6 +15,8 @@
         v-model="email"
         outlined
         class="rp-field"
+        color="primary"
+        :dark="$q.dark.isActive"
         :label="t('login.loginLabel')"
         autocomplete="username"
         :rules="[(val) => !!val || t('login.required')]"
@@ -25,6 +27,8 @@
         v-model="password"
         outlined
         class="rp-field"
+        color="primary"
+        :dark="$q.dark.isActive"
         :type="showPassword ? 'text' : 'password'"
         :label="t('login.passwordLabel')"
         autocomplete="current-password"
@@ -60,9 +64,11 @@
 </template>
 
 <script setup lang="ts">
+import { useQuasar } from 'quasar';
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
+const $q = useQuasar();
 const { t } = useI18n();
 
 const email = ref('');
@@ -105,6 +111,26 @@ function onSubmit() {
 
 .rp-field :deep(.q-field__control) {
   min-height: 56px;
+}
+
+/* Тёмная тема: явный цвет ввода и лейбла (Quasar иначе может оставить тёмный текст на тёмном фоне) */
+.rp-field :deep(.q-field__native),
+.rp-field :deep(.q-field__native input) {
+  color: var(--rp-foreground);
+}
+
+.rp-field :deep(.q-field__label) {
+  color: var(--rp-muted-foreground);
+}
+
+.rp-field :deep(.q-field--focused .q-field__label),
+.rp-field :deep(.q-field--highlighted .q-field__label),
+.rp-field :deep(.q-field--float .q-field__label) {
+  color: var(--rp-primary);
+}
+
+.rp-field :deep(.q-field__marginal) {
+  color: var(--rp-muted-foreground);
 }
 
 /* Убирает «лишний» прямоугольник под outlined-полем при ошибке (конфликт слоёв/нижней зоны). */

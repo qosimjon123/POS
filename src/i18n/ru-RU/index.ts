@@ -19,10 +19,17 @@ export default {
     modeQr: 'QR + PIN',
     modeEmail: 'Логин и пароль',
     scannerReady: 'Сканер готов',
+    scannerScanning: 'Сканирование…',
     scannerHint: 'Поднесите QR-код из приложения',
+    scanQr: 'Сканировать QR',
+    scanFromFile: 'Из файла',
+    stopScan: 'Остановить',
     shieldHint:
       'После сканирования сессия активна 2 минуты и допускает до 5 попыток ввода.',
     pinLockedTitle: 'ПИН-код будет доступен после сканирования',
+    pinEnterTitle: 'Введите PIN-код',
+    mobileStepQrTitle: 'Сканирование QR',
+    mobileStepPinTitle: 'Ввод PIN',
     dividerOr: 'Или',
     standardLogin: 'Стандартный вход',
     standardLoginSubtitle:
@@ -36,5 +43,17 @@ export default {
     required: 'Обязательное поле',
     showPassword: 'Показать пароль',
     hidePassword: 'Скрыть пароль',
+  },
+  scanner: {
+    noCameraAccess: 'Нет доступа к камере',
+    cameraPermissionHint: 'Разрешите доступ в настройках приложения.',
+    openSettings: 'Настройки',
+    browserCameraDenied: 'Браузер запретил доступ к камере',
+    notSupportedOnDevice: 'Сканирование на этом устройстве недоступно',
+    googleModuleUnavailable:
+      'Не удалось установить модуль сканера Google. Проверьте Google Play.',
+    unexpectedError: 'Не удалось запустить сканер. Попробуйте ещё раз.',
+    fileNoBarcode: 'На изображении не найден штрихкод или QR-код',
+    fileReadError: 'Не удалось прочитать изображение',
   },
 };

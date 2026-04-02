@@ -37,3 +37,31 @@ body {
   background: var(--rp-background);
   color: var(--rp-foreground);
 }
+
+/* Quasar Notify: top banners below status bar / punch-hole camera */
+.q-notifications__list--top {
+  padding-top: max(
+    16px,
+    calc(env(safe-area-inset-top, 0px) + 10px)
+  );
+  box-sizing: border-box;
+}
+
+/* Quasar Notify: close (×) and actions — framework defaults use --q-primary */
+.q-notification__actions {
+  color: #fff !important;
+
+  .q-btn {
+    color: #fff !important;
+  }
+}
+
+/* ML Kit: camera runs behind WebView; hide app chrome while native scan is active */
+body.barcode-scanner-active {
+  background: transparent !important;
+
+  #q-app {
+    opacity: 0;
+    pointer-events: none;
+  }
+}

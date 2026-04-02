@@ -18,6 +18,9 @@ android {
     }
     buildTypes {
         release {
+            // Unsigned release APK cannot be installed on devices. Use the debug keystore so
+            // `assembleRelease` is installable locally. Replace with a real release keystore for Play.
+            signingConfig signingConfigs.debug
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

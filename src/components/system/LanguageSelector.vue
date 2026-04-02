@@ -6,6 +6,8 @@
     padding="sm"
     class="rp-settings-card"
     dropdown-icon="expand_more"
+    :dark="$q.dark.isActive"
+    content-class="rp-lang-menu-popup"
     :aria-label="t('system.languageMenu')"
   >
     <template #label>
@@ -36,11 +38,14 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import { LocalStorage, useQuasar } from 'quasar';
 import { useI18n } from 'vue-i18n';
 
-import type { MessageLanguages } from 'src/boot/i18n';
+import { LOCALE_STORAGE_KEY } from 'src/config/locale';
+import type { MessageLanguages } from 'src/i18n';
 
-const { locale, t } = useI18n();
+const $q = useQuasar();
+const { locale, t } = useI18n({ useScope: 'global' });
 
 const localeOptions: { value: MessageLanguages; label: string }[] = [
   { value: 'ru-RU', label: 'RU' },
@@ -53,6 +58,7 @@ const currentShort = computed(() =>
 
 function setLocale(code: MessageLanguages) {
   locale.value = code;
+  LocalStorage.set(LOCALE_STORAGE_KEY, code);
 }
 </script>
 
@@ -98,5 +104,36 @@ function setLocale(code: MessageLanguages) {
 
 .rp-lang-menu :deep(.q-item__section) {
   text-align: center;
+}
+</style>
+
+<!-- QMenu рендерится в телепорте на body — scoped :deep не всегда попадает в popup -->
+<style lang="scss">
+.rp-lang-menu-popup.q-menu {
+  background: var(--rp-card) !important;
+  border: 1px solid var(--rp-border);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  padding: 4px 0;
+}
+
+.rp-lang-menu-popup .q-item {
+  color: var(--rp-foreground);
+  min-height: 40px;
+}
+
+.rp-lang-menu-popup .q-item--active {
+  background: var(--rp-secondary);
+  color: var(--rp-foreground);
+}
+
+.rp-lang-menu-popup .q-item:hover,
+.rp-lang-menu-popup .q-item:focus-visible {
+  background: var(--rp-secondary);
+}
+
+.rp-lang-menu-popup .q-focus-helper {
+  background: currentColor;
+  opacity: 0.08;
 }
 </style>
