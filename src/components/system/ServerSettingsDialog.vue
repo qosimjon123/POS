@@ -9,6 +9,9 @@
         <q-input
           v-model="settingsDraftUrl"
           outlined
+          class="rp-server-field"
+          color="primary"
+          :dark="$q.dark.isActive"
           :label="t('system.serverUrlLabel')"
           type="url"
           autocomplete="url"
@@ -37,10 +40,12 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { storeToRefs } from 'pinia';
+import { useQuasar } from 'quasar';
 import { useI18n } from 'vue-i18n';
 
 import { useServerSettingsStore } from 'src/stores/server-settings';
 
+const $q = useQuasar();
 const { t } = useI18n();
 const serverStore = useServerSettingsStore();
 
@@ -67,7 +72,28 @@ const dialogVisible = computed({
 }
 
 .rp-dialog-save {
-  background: var(--rp-primary) !important;
-  color: var(--rp-primary-foreground) !important;
+  background: var(--rp-primary);
+  color: var(--rp-primary-foreground);
 }
+
+/* Same as login fields: Quasar + dark card — label focus color from design tokens */
+.rp-server-field :deep(.q-field__native),
+.rp-server-field :deep(.q-field__native input) {
+  color: var(--rp-foreground);
+}
+
+.rp-server-field :deep(.q-field__label) {
+  color: var(--rp-muted-foreground);
+}
+
+.rp-server-field :deep(.q-field--focused .q-field__label),
+.rp-server-field :deep(.q-field--highlighted .q-field__label),
+.rp-server-field :deep(.q-field--float .q-field__label) {
+  color: var(--rp-primary);
+}
+
+.rp-server-field :deep(.q-field__marginal) {
+  color: var(--rp-muted-foreground);
+}
+
 </style>
