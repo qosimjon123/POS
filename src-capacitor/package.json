@@ -5,6 +5,7 @@
   "author": "pentester <python.malaysia.life@mail.ru>",
   "private": true,
   "dependencies": {
+    "@capacitor-community/safe-area": "^8.0.1",
     "@capacitor-mlkit/barcode-scanning": "^8.0.1",
     "@capacitor/android": "^8.3.0",
     "@capacitor/app": "^8.0.0",

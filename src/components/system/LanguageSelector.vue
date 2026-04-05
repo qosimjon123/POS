@@ -25,10 +25,10 @@
         :key="opt.value"
         v-close-popup
         clickable
-        :active="locale === opt.value"
+        :active="localeStore.locale === opt.value"
         role="option"
-        :aria-selected="locale === opt.value"
-        @click="setLocale(opt.value)"
+        :aria-selected="localeStore.locale === opt.value"
+        @click="localeStore.setLocale(opt.value)"
       >
         <q-item-section class="text-right">{{ opt.label }}</q-item-section>
       </q-item>
@@ -38,14 +38,15 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import { LocalStorage, useQuasar } from 'quasar';
+import { useQuasar } from 'quasar';
 import { useI18n } from 'vue-i18n';
 
-import { LOCALE_STORAGE_KEY } from 'src/config/locale';
 import type { MessageLanguages } from 'src/i18n';
+import { useLocaleStore } from 'src/stores/locale';
 
 const $q = useQuasar();
-const { locale, t } = useI18n({ useScope: 'global' });
+const { t } = useI18n({ useScope: 'global' });
+const localeStore = useLocaleStore();
 
 const localeOptions: { value: MessageLanguages; label: string }[] = [
   { value: 'ru-RU', label: 'RU' },
@@ -53,13 +54,8 @@ const localeOptions: { value: MessageLanguages; label: string }[] = [
 ];
 
 const currentShort = computed(() =>
-  locale.value === 'tg-TJ' ? 'TJ' : 'RU',
+  localeStore.locale === 'tg-TJ' ? 'TJ' : 'RU',
 );
-
-function setLocale(code: MessageLanguages) {
-  locale.value = code;
-  LocalStorage.set(LOCALE_STORAGE_KEY, code);
-}
 </script>
 
 <style scoped lang="scss">

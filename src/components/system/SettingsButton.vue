@@ -17,7 +17,6 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import ServerSettingsDialog from 'src/components/system/ServerSettingsDialog.vue';
@@ -25,10 +24,6 @@ import { useServerSettingsStore } from 'src/stores/server-settings';
 
 const { t } = useI18n();
 const serverStore = useServerSettingsStore();
-
-onMounted(() => {
-  serverStore.hydrateFromStorage();
-});
 </script>
 
 <style scoped lang="scss">

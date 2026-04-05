@@ -17,16 +17,11 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useThemeStore } from 'src/stores/theme';
 
 const { t } = useI18n();
 const themeStore = useThemeStore();
-
-onMounted(() => {
-  themeStore.hydrateFromStorage();
-});
 </script>
 
 <style scoped lang="scss">

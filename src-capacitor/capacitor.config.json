@@ -1,5 +1,10 @@
 {
   "appId": "com.fadltech.posnext.app",
   "appName": "Restro POS",
-  "webDir": "../dist/spa"
+  "webDir": "../dist/spa",
+  "plugins": {
+    "SystemBars": {
+      "insetsHandling": "disable"
+    }
+  }
 }

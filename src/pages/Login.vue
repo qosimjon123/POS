@@ -22,29 +22,29 @@
           <button
             type="button"
             class="rp-mode-tab col"
-            :class="{ 'rp-mode-tab--active': loginMode === 'qr' }"
+            :class="{ 'rp-mode-tab--active': login.mode === 'qr' }"
             role="tab"
-            :aria-selected="loginMode === 'qr'"
-            :tabindex="loginMode === 'qr' ? 0 : -1"
-            @click="loginMode = 'qr'"
+            :aria-selected="login.mode === 'qr'"
+            :tabindex="login.mode === 'qr' ? 0 : -1"
+            @click="login.setMode('qr')"
           >
             {{ t('login.modeQr') }}
           </button>
           <button
             type="button"
             class="rp-mode-tab col"
-            :class="{ 'rp-mode-tab--active': loginMode === 'email' }"
+            :class="{ 'rp-mode-tab--active': login.mode === 'email' }"
             role="tab"
-            :aria-selected="loginMode === 'email'"
-            :tabindex="loginMode === 'email' ? 0 : -1"
-            @click="loginMode = 'email'"
+            :aria-selected="login.mode === 'email'"
+            :tabindex="login.mode === 'email' ? 0 : -1"
+            @click="login.setMode('email')"
           >
             {{ t('login.modeEmail') }}
           </button>
         </div>
 
         <div class="rp-login-panel" role="tabpanel">
-          <QrLoginMethod v-if="loginMode === 'qr'" />
+          <QrLoginMethod v-if="login.mode === 'qr'" />
           <EmailPasswordLoginMethod v-else />
         </div>
       </div>
@@ -53,7 +53,6 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import ConnectionStatus from 'src/components/system/ConnectionStatus.vue';
@@ -63,10 +62,11 @@ import ThemeToggle from 'src/components/system/ThemeToggle.vue';
 import TimeDisplay from 'src/components/system/TimeDisplay.vue';
 import EmailPasswordLoginMethod from 'src/components/login/EmailPasswordLoginMethod.vue';
 import QrLoginMethod from 'src/components/login/QrLoginMethod.vue';
+import { useLoginStore } from 'src/stores/login';
 
 const { t } = useI18n();
 
-const loginMode = ref<'qr' | 'email'>('qr');
+const login = useLoginStore();
 </script>
 
 <style scoped lang="scss">
@@ -79,10 +79,10 @@ const loginMode = ref<'qr' | 'email'>('qr');
 .rp-login-toolbar {
   box-sizing: border-box;
   width: 100%;
-  padding-top: max(24px, env(safe-area-inset-top, 0px));
-  padding-right: max(48px, env(safe-area-inset-right, 0px));
+  padding-top: max(24px, var(--rp-safe-inset-top));
+  padding-right: max(48px, var(--rp-safe-inset-right));
   padding-bottom: 24px;
-  padding-left: max(48px, env(safe-area-inset-left, 0px));
+  padding-left: max(48px, var(--rp-safe-inset-left));
 }
 
 .rp-toolbar-gap {
@@ -92,9 +92,9 @@ const loginMode = ref<'qr' | 'email'>('qr');
 .rp-login-main {
   box-sizing: border-box;
   padding-top: 10px;
-  padding-right: max(48px, env(safe-area-inset-right, 0px));
-  padding-bottom: max(80px, env(safe-area-inset-bottom, 0px));
-  padding-left: max(48px, env(safe-area-inset-left, 0px));
+  padding-right: max(48px, var(--rp-safe-inset-right));
+  padding-bottom: max(80px, var(--rp-safe-inset-bottom));
+  padding-left: max(48px, var(--rp-safe-inset-left));
 }
 
 .rp-login-wrap {
@@ -146,19 +146,19 @@ const loginMode = ref<'qr' | 'email'>('qr');
 
 @media (max-width: 599px) {
   .rp-login-toolbar {
-    padding-top: max(16px, env(safe-area-inset-top, 0px));
-    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-top: max(16px, var(--rp-safe-inset-top));
+    padding-right: max(16px, var(--rp-safe-inset-right));
     padding-bottom: 16px;
-    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-left: max(16px, var(--rp-safe-inset-left));
     flex-wrap: wrap;
     gap: 12px;
   }
 
   .rp-login-main {
     padding-top: 16px;
-    padding-right: max(16px, env(safe-area-inset-right, 0px));
-    padding-bottom: max(48px, env(safe-area-inset-bottom, 0px));
-    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, var(--rp-safe-inset-right));
+    padding-bottom: max(48px, var(--rp-safe-inset-bottom));
+    padding-left: max(16px, var(--rp-safe-inset-left));
   }
 }
 </style>

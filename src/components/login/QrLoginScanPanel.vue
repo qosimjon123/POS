@@ -49,7 +49,6 @@
           <q-btn
             v-if="scanner.scanning && !isNative"
             outline
-            color="primary"
             class="rp-scan-btn"
             :label="t('login.stopScan')"
             @click="onStopScan"

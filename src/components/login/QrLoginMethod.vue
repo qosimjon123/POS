@@ -37,10 +37,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, watch } from 'vue';
+import { storeToRefs } from 'pinia';
 import { useQuasar } from 'quasar';
 import { useI18n } from 'vue-i18n';
 
+import { useLoginStore } from 'src/stores/login';
 import { useScannerStore } from 'src/stores/scanner';
 
 import QrLoginPinPanel from './QrLoginPinPanel.vue';
@@ -53,20 +55,19 @@ const $q = useQuasar();
 const isMobile = computed(() => $q.screen.lt.sm);
 
 const scanner = useScannerStore();
-const scanned = ref(false);
-const pin = ref('');
-const mobileStep = ref(1);
+const login = useLoginStore();
+const { scanned, pin, mobileStep } = storeToRefs(login);
 
 watch(
   () => scanner.lastResult,
   (r) => {
-    if (r?.value) scanned.value = true;
+    if (r?.value) login.setScanned(true);
   },
 );
 
 watch([scanned, isMobile], () => {
   if (scanned.value && isMobile.value) {
-    mobileStep.value = 2;
+    login.setMobileStep(2);
   }
 });
 </script>

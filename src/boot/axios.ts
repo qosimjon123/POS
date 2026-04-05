@@ -3,6 +3,7 @@ import axios, { type AxiosInstance } from 'axios';
 import { LocalStorage } from 'quasar';
 
 import { SERVER_BASE_URL_STORAGE_KEY } from 'src/config/server';
+import { useServerSettingsStore } from 'src/stores/server-settings';
 
 declare module 'vue' {
   interface ComponentCustomProperties {
@@ -21,6 +22,8 @@ const api = axios.create({
 });
 
 export default defineBoot(({ app }) => {
+  useServerSettingsStore().hydrateFromStorage();
+
   // for use inside Vue files (Options API) through this.$axios and this.$api
 
   app.config.globalProperties.$axios = axios;

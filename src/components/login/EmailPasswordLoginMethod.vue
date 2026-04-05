@@ -64,16 +64,17 @@
 </template>
 
 <script setup lang="ts">
+import { storeToRefs } from 'pinia';
 import { useQuasar } from 'quasar';
-import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+
+import { useLoginStore } from 'src/stores/login';
 
 const $q = useQuasar();
 const { t } = useI18n();
 
-const email = ref('');
-const password = ref('');
-const showPassword = ref(false);
+const login = useLoginStore();
+const { email, password, showPassword } = storeToRefs(login);
 
 function onSubmit() {
   // Wire to auth API when ready
