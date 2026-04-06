@@ -5,7 +5,7 @@
       flat
       dense
       padding="sm"
-      class="rp-settings-circle"
+      class="rp-toolbar-round"
       :aria-label="t('system.openSettings')"
       @click="serverStore.openSettingsDialog()"
     >
@@ -30,13 +30,6 @@ const serverStore = useServerSettingsStore();
 .rp-settings-btn-wrap {
   display: inline-flex;
   align-items: center;
-}
-
-.rp-settings-circle {
-  width: 48px;
-  height: 48px;
-  border-radius: 999px;
-  background: var(--rp-card);
 }
 
 .rp-icon-fg {

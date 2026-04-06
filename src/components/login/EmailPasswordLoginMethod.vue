@@ -3,7 +3,7 @@
     class="rp-email-section column items-center"
     aria-labelledby="email-login-heading"
   >
-    <q-form class="rp-login-card column" @submit.prevent="onSubmit">
+    <q-form class="rp-login-card column" @submit.prevent="onSubmit" autocomplete="off">
       <div class="q-mb-sm">
         <h2 id="email-login-heading" class="rp-login-title">
           {{ t('login.standardLogin') }}
@@ -18,9 +18,9 @@
         color="primary"
         :dark="$q.dark.isActive"
         :label="t('login.loginLabel')"
-        autocomplete="username"
         :rules="[(val) => !!val || t('login.required')]"
         lazy-rules
+        @focus="onFieldFocus('email')"
       />
 
       <q-input
@@ -31,9 +31,9 @@
         :dark="$q.dark.isActive"
         :type="showPassword ? 'text' : 'password'"
         :label="t('login.passwordLabel')"
-        autocomplete="current-password"
         :rules="[(val) => !!val || t('login.required')]"
         lazy-rules
+        @focus="onFieldFocus('password')"
       >
         <template #append>
           <q-btn
@@ -68,6 +68,7 @@ import { storeToRefs } from 'pinia';
 import { useQuasar } from 'quasar';
 import { useI18n } from 'vue-i18n';
 
+import { useRpKeyboard } from 'src/components/common/keyboard-inject';
 import { useLoginStore } from 'src/stores/login';
 
 const $q = useQuasar();
@@ -75,6 +76,27 @@ const { t } = useI18n();
 
 const login = useLoginStore();
 const { email, password, showPassword } = storeToRefs(login);
+
+const kbd = useRpKeyboard();
+
+function onFieldFocus(field: 'email' | 'password') {
+  if (field === 'email') {
+    kbd.bindInput(
+      () => email.value,
+      (v) => {
+        email.value = v;
+      },
+    );
+  } else {
+    kbd.bindInput(
+      () => password.value,
+      (v) => {
+        password.value = v;
+      },
+    );
+  }
+  kbd.open();
+}
 
 function onSubmit() {
   // Wire to auth API when ready

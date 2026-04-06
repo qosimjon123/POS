@@ -45,7 +45,9 @@
 
         <div class="rp-login-panel" role="tabpanel">
           <QrLoginMethod v-if="login.mode === 'qr'" />
-          <EmailPasswordLoginMethod v-else />
+          <RpKeyboard v-else type="full" position="floating">
+            <EmailPasswordLoginMethod />
+          </RpKeyboard>
         </div>
       </div>
     </main>
@@ -60,6 +62,7 @@ import LanguageSelector from 'src/components/system/LanguageSelector.vue';
 import SettingsButton from 'src/components/system/SettingsButton.vue';
 import ThemeToggle from 'src/components/system/ThemeToggle.vue';
 import TimeDisplay from 'src/components/system/TimeDisplay.vue';
+import RpKeyboard from 'src/components/common/RpKeyboard.vue';
 import EmailPasswordLoginMethod from 'src/components/login/EmailPasswordLoginMethod.vue';
 import QrLoginMethod from 'src/components/login/QrLoginMethod.vue';
 import { useLoginStore } from 'src/stores/login';

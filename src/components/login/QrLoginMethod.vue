@@ -5,7 +5,7 @@
       <div class="rp-col-left">
         <QrLoginScanPanel />
       </div>
-      <QrLoginPinPanel v-model:pin="pin" :scanned="scanned" />
+      <QrLoginPinPanel />
     </div>
 
     <!-- Телефон: горизонтальный stepper — шаг 1 QR, шаг 2 PIN после сканирования -->
@@ -30,7 +30,7 @@
         <QrLoginScanPanel />
       </q-step>
       <q-step :name="2" :title="t('login.mobileStepPinTitle')" icon="lock">
-        <QrLoginPinPanel v-model:pin="pin" :scanned="scanned" />
+        <QrLoginPinPanel />
       </q-step>
     </q-stepper>
   </section>
@@ -56,7 +56,7 @@ const isMobile = computed(() => $q.screen.lt.sm);
 
 const scanner = useScannerStore();
 const login = useLoginStore();
-const { scanned, pin, mobileStep } = storeToRefs(login);
+const { scanned, mobileStep } = storeToRefs(login);
 
 watch(
   () => scanner.lastResult,

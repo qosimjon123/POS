@@ -44,6 +44,10 @@ export default {
     required: 'Майдони ҳатмӣ',
     showPassword: 'Нишон додани парол',
     hidePassword: 'Пинҳон кардани парол',
+    closeKeyboard: 'Пинҳон кардани клавиатура',
+    showKeyboardBtn: 'Клавиатура',
+    hideKeyboardBtn: 'Пинҳон кардани клавиатура',
+    keyboardDragHint: 'Кӯчондан',
   },
   scanner: {
     noCameraAccess: 'Дастрасӣ ба камера нест',

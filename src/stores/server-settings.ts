@@ -2,12 +2,8 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { LocalStorage } from 'quasar';
 
-import { api } from 'src/boot/axios';
+import { api, normalizeBaseUrl } from 'src/api/http';
 import { SERVER_BASE_URL_STORAGE_KEY } from 'src/config/server';
-
-function normalizeBaseUrl(raw: string): string {
-  return raw.trim().replace(/\/+$/, '');
-}
 
 export const useServerSettingsStore = defineStore('serverSettings', () => {
   const baseUrl = ref(

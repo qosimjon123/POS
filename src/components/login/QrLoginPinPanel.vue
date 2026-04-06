@@ -47,18 +47,15 @@
 </template>
 
 <script setup lang="ts">
+import { storeToRefs } from 'pinia';
 import { useI18n } from 'vue-i18n';
+
+import { useLoginStore } from 'src/stores/login';
 
 const { t } = useI18n();
 
-const props = defineProps<{
-  scanned: boolean;
-  pin: string;
-}>();
-
-const emit = defineEmits<{
-  'update:pin': [value: string];
-}>();
+const login = useLoginStore();
+const { scanned, pin } = storeToRefs(login);
 
 const numKeys = [
   { key: '1', label: '1' },
@@ -76,13 +73,13 @@ const numKeys = [
 ] as const;
 
 function onNumKey(key: string) {
-  if (!props.scanned) return;
+  if (!scanned.value) return;
   if (key === 'back') {
-    emit('update:pin', props.pin.slice(0, -1));
+    login.setPin(pin.value.slice(0, -1));
     return;
   }
-  if (props.pin.length >= 4) return;
-  emit('update:pin', props.pin + key);
+  if (pin.value.length >= 4) return;
+  login.setPin(pin.value + key);
 }
 </script>
 

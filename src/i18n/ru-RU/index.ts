@@ -43,6 +43,10 @@ export default {
     required: 'Обязательное поле',
     showPassword: 'Показать пароль',
     hidePassword: 'Скрыть пароль',
+    closeKeyboard: 'Скрыть клавиатуру',
+    showKeyboardBtn: 'Клавиатура',
+    hideKeyboardBtn: 'Скрыть клавиатуру',
+    keyboardDragHint: 'Переместить',
   },
   scanner: {
     noCameraAccess: 'Нет доступа к камере',
