@@ -21,6 +21,7 @@
         :rules="[(val) => !!val || t('login.required')]"
         lazy-rules
         @focus="onFieldFocus('email')"
+        @blur="onFieldBlur"
       />
 
       <q-input
@@ -34,6 +35,7 @@
         :rules="[(val) => !!val || t('login.required')]"
         lazy-rules
         @focus="onFieldFocus('password')"
+        @blur="onFieldBlur"
       >
         <template #append>
           <q-btn
@@ -53,6 +55,7 @@
         class="rp-sign-in-btn full-width q-mt-md"
         :label="t('login.signIn')"
         type="submit"
+        @click="onSubmit"
       />
     </q-form>
 
@@ -67,10 +70,12 @@
 import { storeToRefs } from 'pinia';
 import { useQuasar } from 'quasar';
 import { useI18n } from 'vue-i18n';
+import { useRouter } from 'vue-router';
 
 import { useRpKeyboard } from 'src/components/common/keyboard-inject';
 import { useLoginStore } from 'src/stores/login';
 
+const router = useRouter();
 const $q = useQuasar();
 const { t } = useI18n();
 
@@ -98,8 +103,14 @@ function onFieldFocus(field: 'email' | 'password') {
   kbd.open();
 }
 
+function onFieldBlur() {
+  kbd.close();
+  kbd.resetBinding();
+}
+
 function onSubmit() {
   // Wire to auth API when ready
+  void router.push('/pos');
 }
 </script>
 
