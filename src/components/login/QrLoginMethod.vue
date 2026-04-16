@@ -44,6 +44,7 @@ import { useI18n } from 'vue-i18n';
 
 import { useLoginStore } from 'src/stores/login';
 import { useScannerStore } from 'src/stores/scanner';
+import { isPairingQrEnvelope } from 'src/utils/pinQrCrypto';
 
 import QrLoginPinPanel from './QrLoginPinPanel.vue';
 import QrLoginScanPanel from './QrLoginScanPanel.vue';
@@ -61,7 +62,18 @@ const { scanned, mobileStep } = storeToRefs(login);
 watch(
   () => scanner.lastResult,
   (r) => {
-    if (r?.value) login.setScanned(true);
+    const raw = r?.value?.trim();
+    if (!raw) return;
+    if (isPairingQrEnvelope(raw)) {
+      login.setQrPairingEnvelope(raw);
+      login.setScanned(true);
+    } else {
+      $q.notify({
+        type: 'warning',
+        message: t('login.qrInvalidPayload'),
+        position: 'top',
+      });
+    }
   },
 );
 

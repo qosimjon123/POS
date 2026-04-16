@@ -14,19 +14,70 @@
             ? 'rp-pos-action-btn--primary'
             : 'rp-pos-action-btn--muted'
         "
+        @click="onActionClick(a.key)"
       >
         <q-icon :name="a.icon" size="24px" class="rp-pos-action-icon" />
         <span>{{ a.label }}</span>
       </button>
     </div>
+
+    <PosDiscountCouponDialog v-model="discountCouponOpen" />
+
+    <RegisterOpenDialog
+      v-model="shiftSessionOpen"
+      flow="close"
+      :register="selectedRegister"
+      @confirm="onShiftCloseConfirm"
+    />
   </section>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { storeToRefs } from 'pinia';
+import { computed, ref } from 'vue';
+import { useQuasar } from 'quasar';
 import { useI18n } from 'vue-i18n';
 
+import RegisterOpenDialog from 'src/components/register/RegisterOpenDialog.vue';
+import PosDiscountCouponDialog from 'src/components/pos/PosDiscountCouponDialog.vue';
+import { useRegisterContextStore } from 'src/stores/register-context';
+
 const { t } = useI18n();
+const $q = useQuasar();
+const registerStore = useRegisterContextStore();
+const { selectedRegister } = storeToRefs(registerStore);
+
+const discountCouponOpen = ref(false);
+const shiftSessionOpen = ref(false);
+
+function onShiftCloseConfirm() {
+  if (!selectedRegister.value) return;
+  registerStore.confirmRegisterClosed(selectedRegister.value.id);
+  shiftSessionOpen.value = false;
+  $q.notify({
+    type: 'positive',
+    message: t('registers.shiftClosedStub'),
+    position: 'top',
+  });
+}
+
+function onActionClick(key: string) {
+  if (key === 'discountCoupon') {
+    discountCouponOpen.value = true;
+    return;
+  }
+  if (key === 'shift') {
+    if (!selectedRegister.value?.isOpen) {
+      $q.notify({
+        type: 'warning',
+        message: t('registers.shiftCloseNotAvailable'),
+        position: 'top',
+      });
+      return;
+    }
+    shiftSessionOpen.value = true;
+  }
+}
 
 const actions = computed(() => [
   { key: 'qty', icon: 'pin', label: t('pos.setQuantity'), variant: 'muted' as const },
@@ -50,9 +101,9 @@ const actions = computed(() => [
     variant: 'primary' as const,
   },
   {
-    key: 'tx',
-    icon: 'receipt_long',
-    label: t('pos.transactionOption'),
+    key: 'discountCoupon',
+    icon: 'local_offer',
+    label: t('pos.discountAndCouponAction'),
     variant: 'primary' as const,
   },
   { key: 'void', icon: 'block', label: t('pos.voids'), variant: 'primary' as const },

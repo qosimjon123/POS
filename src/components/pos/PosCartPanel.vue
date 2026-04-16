@@ -14,37 +14,102 @@
       >
         <div class="rp-pos-cart-scroll-inner">
           <button
-            v-for="(line, idx) in lines"
+            v-for="(line, idx) in displayLines"
             :key="line.id"
             type="button"
             class="rp-pos-cart-line"
-            :class="{ 'rp-pos-cart-line--active': idx === activeIndex }"
-            @click="activeIndex = idx"
+            :class="{
+              'rp-pos-cart-line--active': idx === activeIndex,
+              'rp-pos-cart-line--compact': variant === 'mobileCheckout',
+            }"
+            @click="onLineClick(idx, line.id)"
           >
-            <div class="rp-pos-cart-line__head row items-center justify-between">
-              <div class="rp-pos-cart-line__title row items-center no-wrap">
-                <q-icon
-                  name="expand_less"
-                  size="16px"
-                  :class="
-                    idx === activeIndex
-                      ? 'text-white'
-                      : 'rp-icon-fg'
-                  "
-                />
-                <span class="ellipsis">{{ line.title }}</span>
-              </div>
-              <span
-                class="rp-pos-cart-line__price"
-                :class="idx === activeIndex ? 'text-white' : ''"
-                >{{ line.price }}</span
+            <div class="rp-pos-cart-line__inner">
+              <div
+                class="rp-pos-cart-line__thumb"
+                :class="{ 'rp-pos-cart-line__thumb--sm': variant === 'mobileCheckout' }"
               >
-            </div>
-            <div
-              class="rp-pos-cart-line__details"
-              :class="idx === activeIndex ? 'text-white' : ''"
-            >
-              {{ line.details }}
+                <q-img
+                  v-if="line.imageUrl"
+                  :src="line.imageUrl"
+                  ratio="1"
+                  fit="cover"
+                  class="rp-pos-cart-line__thumb-img rounded-borders"
+                  spinner-size="28px"
+                >
+                  <template #error>
+                    <div class="rp-pos-cart-line__thumb-fallback row items-center justify-center rounded-borders">
+                      <q-icon
+                        name="shopping_bag"
+                        :size="thumbIconSize"
+                        class="rp-pos-cart-line__thumb-icon"
+                      />
+                    </div>
+                  </template>
+                </q-img>
+                <div
+                  v-else
+                  class="rp-pos-cart-line__thumb-fallback row items-center justify-center rounded-borders"
+                >
+                  <q-icon
+                    name="shopping_bag"
+                    :size="thumbIconSize"
+                    class="rp-pos-cart-line__thumb-icon"
+                  />
+                </div>
+              </div>
+              <div class="col min-w-0 column rp-pos-cart-line__body">
+                <div class="rp-pos-cart-line__head">
+                  <span class="rp-pos-cart-line__title ellipsis">{{ line.title }}</span>
+                  <span class="rp-pos-cart-line__price">{{ line.price }}</span>
+                </div>
+                <div class="rp-pos-cart-line__details">
+                  <div
+                    v-if="line.detailsWarehouse"
+                    class="rp-pos-cart-line__warehouse-value ellipsis"
+                  >
+                    {{ line.detailsWarehouse }}
+                  </div>
+                  <div
+                    v-if="line.detailsMeta"
+                    class="rp-pos-cart-line__details-line ellipsis"
+                  >
+                    {{ line.detailsMeta }}
+                  </div>
+                </div>
+              </div>
+              <div
+                class="rp-pos-cart-line__actions column items-stretch no-wrap"
+                @click.stop
+              >
+                <div class="rp-pos-cart-line__stepper row items-center no-wrap">
+                  <button
+                    type="button"
+                    class="rp-pos-cart-line__step-btn"
+                    :aria-label="t('pos.decreaseQty')"
+                    @click="cartStore.incrementLineQty(line.id, -1)"
+                  >
+                    −
+                  </button>
+                  <span class="rp-pos-cart-line__qty">{{ line.qty }}</span>
+                  <button
+                    type="button"
+                    class="rp-pos-cart-line__step-btn"
+                    :aria-label="t('pos.increaseQty')"
+                    @click="cartStore.incrementLineQty(line.id, 1)"
+                  >
+                    +
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  class="rp-pos-cart-line__remove-btn row items-center justify-center"
+                  :aria-label="t('pos.removeLine')"
+                  @click="cartStore.removeLine(line.id)"
+                >
+                  <q-icon name="delete_outline" :size="removeIconSize" />
+                </button>
+              </div>
             </div>
           </button>
         </div>
@@ -77,6 +142,7 @@
           class="col rp-pos-cart-action rp-pos-cart-action--danger"
           :aria-label="t('pos.resetCart')"
           :disable="lines.length === 0"
+          @click="cartStore.clearCart()"
         >
           <q-icon name="restart_alt" size="20px" />
         </q-btn>
@@ -107,10 +173,13 @@
 </template>
 
 <script setup lang="ts">
+import { storeToRefs } from 'pinia';
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-withDefaults(
+import { cartLinePriceListCaption, usePosCartStore } from 'src/stores/pos-cart';
+
+const props = withDefaults(
   defineProps<{
     /** Мобильный «Чек»: список ~5 строк + скролл; итоги ниже по скроллу страницы. */
     variant?: 'default' | 'mobileCheckout';
@@ -134,61 +203,52 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 
-interface CartLine {
-  id: string;
-  title: string;
-  price: string;
-  details: string;
-}
+const cartStore = usePosCartStore();
+const { lines, totalsFormatted } = storeToRefs(cartStore);
 
 const activeIndex = ref(0);
 
-/** Позже — из Pinia / API; пусто = экран «корзина пуста». */
-const lines = ref<CartLine[]>([]);
+const thumbIconSize = computed(() => (props.variant === 'mobileCheckout' ? '18px' : '22px'));
 
-function parseMoney(s: string): number {
-  const n = parseFloat(String(s).replace(/[^0-9.-]/g, ''));
-  return Number.isFinite(n) ? n : 0;
+const removeIconSize = computed(() => (props.variant === 'mobileCheckout' ? '20px' : '22px'));
+
+const displayLines = computed(() =>
+  lines.value.map((line) => ({
+    id: line.id,
+    title: line.title,
+    imageUrl: line.imageUrl,
+    qty: line.qty,
+    price: cartStore.lineDisplayPrice(line),
+    detailsWarehouse: line.warehouseLabel,
+    detailsMeta: cartLinePriceListCaption(line),
+  })),
+);
+
+const subtotalFmt = computed(() => totalsFormatted.value.subtotalFmt);
+const discountFmt = computed(() => totalsFormatted.value.discountFmt);
+const taxFmt = computed(() => totalsFormatted.value.taxFmt);
+const totalFmt = computed(() => totalsFormatted.value.totalFmt);
+
+function onLineClick(idx: number, lineId: string): void {
+  activeIndex.value = idx;
+  cartStore.openCartLineDialog(lineId);
 }
 
-function fmtUsd(n: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-  }).format(n);
-}
-
-const subtotal = computed(() =>
-  lines.value.reduce((sum, line) => sum + parseMoney(line.price), 0),
-);
-
-/** Заглушки скидки/НДС до интеграции с расчётом чека. */
-const discountAbs = computed(() => (lines.value.length === 0 ? 0 : 18));
-const taxAmount = computed(() =>
-  lines.value.length === 0 ? 0 : Math.round(subtotal.value * 0.0625 * 100) / 100,
-);
-
-const subtotalFmt = computed(() => fmtUsd(subtotal.value));
-const discountFmt = computed(() =>
-  discountAbs.value > 0 ? `-${fmtUsd(discountAbs.value)}` : fmtUsd(0),
-);
-const taxFmt = computed(() => fmtUsd(taxAmount.value));
-const totalFmt = computed(() =>
-  fmtUsd(Math.max(0, subtotal.value - discountAbs.value + taxAmount.value)),
+watch(
+  () => lines.value.length,
+  (len) => {
+    if (activeIndex.value >= len) {
+      activeIndex.value = Math.max(0, len - 1);
+    }
+  },
 );
 
 watch(
-  [totalFmt, subtotalFmt, discountFmt, taxFmt, () => lines.value.length],
-  () => {
-    emit('update:totals', {
-      totalFmt: totalFmt.value,
-      subtotalFmt: subtotalFmt.value,
-      discountFmt: discountFmt.value,
-      taxFmt: taxFmt.value,
-      lineCount: lines.value.length,
-    });
+  totalsFormatted,
+  (totals) => {
+    emit('update:totals', { ...totals });
   },
-  { immediate: true },
+  { immediate: true, deep: true },
 );
 </script>
 
@@ -201,6 +261,8 @@ watch(
   background: var(--rp-background);
   border-right: 1px solid var(--rp-border);
   box-sizing: border-box;
+  container-type: inline-size;
+  container-name: pos-cart;
 }
 
 .rp-pos-cart-list-wrap {
@@ -260,6 +322,14 @@ watch(
 .rp-pos-cart-scroll {
   flex: 1 1 0%;
   min-height: 0;
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* Иначе ширина контента = max(intrinsic строк, viewport) и строки «вылезают» в соседнюю колонку POS. */
+.rp-pos-cart-scroll :deep(.q-scrollarea__content) {
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .rp-pos-cart-scroll-inner {
@@ -268,70 +338,292 @@ watch(
   display: flex;
   flex-direction: column;
   gap: 8px;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .rp-pos-cart-line {
-  --rp-cart-line-height: 118px;
   display: flex;
   flex-direction: column;
   align-items: stretch;
   box-sizing: border-box;
-  height: var(--rp-cart-line-height);
-  min-height: var(--rp-cart-line-height);
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+  height: fit-content;
   flex-shrink: 0;
+  max-width: 100%;
   text-align: left;
-  border: 1px solid var(--rp-border);
-  border-radius: var(--rp-radius-md);
-  padding: 8px 10px;
-  background: var(--rp-card);
+  border: 1px solid var(--rp-pos-cart-line-border, var(--rp-border));
+  border-radius: var(--rp-radius-lg);
+  padding: 12px 14px;
+  background: var(--rp-pos-cart-line-bg, var(--rp-card));
   cursor: pointer;
+  overflow-x: hidden;
   transition:
     background 0.15s ease,
     border-color 0.15s ease,
     color 0.15s ease;
 }
 
-.rp-pos-cart-line--active {
-  background: var(--rp-primary);
-  border-color: var(--rp-primary);
-  color: var(--rp-primary-foreground);
-}
-
-.rp-pos-cart-line__head {
-  flex-shrink: 0;
-}
-
-.rp-pos-cart-line__title {
-  gap: 6px;
-  font-weight: 600;
-  font-size: 13px;
-  min-width: 0;
-}
-
-.rp-pos-cart-line__price {
-  font-weight: 600;
-  font-size: 13px;
-  flex-shrink: 0;
-}
-
-.rp-pos-cart-line__details {
-  flex: 1 1 auto;
+.rp-pos-cart-line__inner {
+  flex: 0 0 auto;
   min-height: 0;
-  margin-top: 4px;
-  font-size: 11px;
-  color: var(--rp-muted-foreground);
-  line-height: 1.35;
-  white-space: pre-line;
-  text-align: left;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 12px;
+}
+
+.rp-pos-cart-line__body {
+  min-height: 0;
+  min-width: 0;
+  max-width: 100%;
   overflow: hidden;
 }
 
-.rp-pos-cart-line--active .rp-pos-cart-line__details {
-  color: color-mix(in srgb, var(--rp-primary-foreground) 86%, transparent);
+.rp-pos-cart-line__thumb {
+  width: 64px;
+  flex-shrink: 0;
+  border-radius: var(--rp-radius-sm);
+  overflow: hidden;
+  align-self: flex-start;
 }
 
-.rp-icon-fg {
+.rp-pos-cart-line__thumb--sm {
+  width: 52px;
+}
+
+.rp-pos-cart-line__thumb-img {
+  border-radius: inherit;
+}
+
+.rp-pos-cart-line__thumb-fallback {
+  width: 100%;
+  aspect-ratio: 1;
+  background: color-mix(in srgb, var(--rp-muted) 88%, var(--rp-border));
+}
+
+.rp-pos-cart-line__thumb-icon {
+  color: var(--rp-muted-foreground);
+  opacity: 0.85;
+}
+
+.rp-pos-cart-line__actions {
+  flex-shrink: 0;
+  align-self: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+
+.rp-pos-cart-line__stepper {
+  flex-shrink: 0;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: var(--rp-radius-md);
+  background: color-mix(in srgb, var(--rp-input) 88%, var(--rp-border));
+  border: 1px solid var(--rp-border);
+}
+
+.rp-pos-cart-line__remove-btn {
+  flex-shrink: 0;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  min-height: 36px;
+  border: 1px solid color-mix(in srgb, var(--rp-negative) 45%, var(--rp-border));
+  border-radius: var(--rp-radius-md);
+  background: color-mix(in srgb, var(--rp-negative) 8%, var(--rp-card));
+  color: var(--rp-negative);
+  cursor: pointer;
+  transition:
+    background 0.12s ease,
+    border-color 0.12s ease,
+    transform 0.12s ease;
+}
+
+.rp-pos-cart-line__remove-btn:hover {
+  background: color-mix(in srgb, var(--rp-negative) 16%, var(--rp-card));
+  border-color: color-mix(in srgb, var(--rp-negative) 55%, var(--rp-border));
+}
+
+.rp-pos-cart-line__remove-btn:focus-visible {
+  outline: 2px solid var(--rp-primary);
+  outline-offset: 2px;
+}
+
+.rp-pos-cart-line__step-btn {
+  margin: 0;
+  padding: 0;
+  min-width: 40px;
+  min-height: 40px;
+  border: 1px solid var(--rp-border);
+  border-radius: var(--rp-radius-sm);
+  background: var(--rp-card);
   color: var(--rp-foreground);
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background 0.12s ease,
+    border-color 0.12s ease;
+}
+
+.rp-pos-cart-line__step-btn:hover {
+  background: color-mix(in srgb, var(--rp-foreground) 7%, var(--rp-card));
+  border-color: color-mix(in srgb, var(--rp-foreground) 22%, var(--rp-border));
+}
+
+.rp-pos-cart-line__step-btn:focus-visible {
+  outline: 2px solid var(--rp-primary);
+  outline-offset: 2px;
+}
+
+.rp-pos-cart-line__qty {
+  min-width: 24px;
+  text-align: center;
+  font-size: 19px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--rp-foreground);
+}
+
+.rp-pos-cart-line--active {
+  position: relative;
+  z-index: 1;
+  border-color: color-mix(in srgb, var(--rp-primary-foreground) 18%, var(--rp-primary));
+  background: linear-gradient(
+    152deg,
+    color-mix(in srgb, var(--rp-primary) 100%, transparent) 0%,
+    color-mix(in srgb, var(--rp-primary) 82%, #000 18%) 100%
+  );
+  color: var(--rp-primary-foreground);
+  box-shadow:
+    0 8px 28px color-mix(in srgb, var(--rp-primary) 38%, transparent),
+    0 1px 0 color-mix(in srgb, var(--rp-primary-foreground) 14%, transparent) inset,
+    inset 3px 0 0 0 color-mix(in srgb, var(--rp-primary-foreground) 45%, transparent);
+}
+
+.rp-pos-cart-line--active .rp-pos-cart-line__thumb {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--rp-primary-foreground) 22%, transparent),
+    0 4px 12px color-mix(in srgb, #000 35%, transparent);
+}
+
+.rp-pos-cart-line--active .rp-pos-cart-line__title,
+.rp-pos-cart-line--active .rp-pos-cart-line__price,
+.rp-pos-cart-line--active .rp-pos-cart-line__qty,
+.rp-pos-cart-line--active .rp-pos-cart-line__step-btn {
+  color: var(--rp-primary-foreground);
+}
+
+.rp-pos-cart-line--active .rp-pos-cart-line__stepper {
+  background: color-mix(in srgb, var(--rp-primary-foreground) 12%, transparent);
+  border-color: color-mix(in srgb, var(--rp-primary-foreground) 26%, transparent);
+  backdrop-filter: blur(6px);
+}
+
+.rp-pos-cart-line--active .rp-pos-cart-line__step-btn {
+  background: color-mix(in srgb, var(--rp-primary-foreground) 16%, transparent);
+  border-color: color-mix(in srgb, var(--rp-primary-foreground) 30%, transparent);
+}
+
+.rp-pos-cart-line--active .rp-pos-cart-line__step-btn:hover {
+  background: color-mix(in srgb, var(--rp-primary-foreground) 26%, transparent);
+  border-color: color-mix(in srgb, var(--rp-primary-foreground) 44%, transparent);
+}
+
+.rp-pos-cart-line--active .rp-pos-cart-line__remove-btn {
+  background: color-mix(in srgb, var(--rp-negative) 22%, transparent);
+  border-color: color-mix(in srgb, var(--rp-negative) 55%, var(--rp-primary-foreground) 20%);
+  color: color-mix(in srgb, #fff 88%, var(--rp-negative));
+}
+
+.rp-pos-cart-line--active .rp-pos-cart-line__remove-btn:hover {
+  background: color-mix(in srgb, var(--rp-negative) 34%, transparent);
+  border-color: color-mix(in srgb, var(--rp-negative) 68%, var(--rp-primary-foreground) 12%);
+}
+
+.rp-pos-cart-line--active .rp-pos-cart-line__remove-btn:focus-visible {
+  outline-color: var(--rp-primary-foreground);
+}
+
+.rp-pos-cart-line--active .rp-pos-cart-line__warehouse-value {
+  color: color-mix(in srgb, var(--rp-primary-foreground) 76%, transparent);
+}
+
+.rp-pos-cart-line--active .rp-pos-cart-line__details-line {
+  color: color-mix(in srgb, var(--rp-primary-foreground) 72%, transparent);
+}
+
+.rp-pos-cart-line--active .rp-pos-cart-line__thumb-icon {
+  color: color-mix(in srgb, var(--rp-primary-foreground) 58%, transparent);
+}
+
+.rp-pos-cart-line__head {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  flex-shrink: 0;
+  gap: 4px;
+  width: 100%;
+  min-width: 0;
+}
+
+.rp-pos-cart-line__title {
+  font-weight: 700;
+  font-size: 17px;
+  line-height: 1.25;
+  min-width: 0;
+  width: 100%;
+  color: var(--rp-foreground);
+  text-align: left;
+}
+
+.rp-pos-cart-line__price {
+  font-weight: 800;
+  font-size: 17px;
+  line-height: 1.3;
+  min-width: 0;
+  width: 100%;
+  color: var(--rp-foreground);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+  text-align: left;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.rp-pos-cart-line__details {
+  flex-shrink: 0;
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  text-align: left;
+}
+
+.rp-pos-cart-line__warehouse-value {
+  display: block;
+  width: 100%;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.35;
+  color: var(--rp-muted-foreground);
+}
+
+.rp-pos-cart-line__details-line {
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--rp-muted-foreground);
 }
 
 .rp-pos-cart-summary {
@@ -393,6 +685,99 @@ watch(
   }
 }
 
+/* Узкая колонка корзины (десктоп): меньше типографика, чтобы строка умещалась. */
+@container pos-cart (max-width: 360px) {
+  .rp-pos-cart-line__title,
+  .rp-pos-cart-line__price {
+    font-size: 15px;
+  }
+
+  .rp-pos-cart-line__details-line {
+    font-size: 13px;
+  }
+
+  .rp-pos-cart-line__warehouse-value {
+    font-size: 11px;
+  }
+
+  .rp-pos-cart-line__qty {
+    font-size: 17px;
+  }
+
+  .rp-pos-cart-line__step-btn {
+    min-width: 36px;
+    min-height: 36px;
+    font-size: 22px;
+  }
+
+  .rp-pos-summary-row {
+    font-size: 13px;
+  }
+
+  .rp-pos-total__label {
+    font-size: 16px;
+  }
+
+  .rp-pos-total__amount {
+    font-size: 24px;
+  }
+}
+
+@container pos-cart (max-width: 280px) {
+  .rp-pos-cart-line__title,
+  .rp-pos-cart-line__price {
+    font-size: 14px;
+  }
+
+  .rp-pos-cart-line__details-line {
+    font-size: 12px;
+  }
+
+  .rp-pos-cart-line__warehouse-value {
+    font-size: 10px;
+  }
+
+  .rp-pos-cart-line {
+    padding: 10px 10px;
+  }
+
+  .rp-pos-cart-scroll-inner {
+    padding: 8px;
+    padding-bottom: 14px;
+    gap: 6px;
+  }
+
+  .rp-pos-cart-line__inner {
+    gap: 8px;
+  }
+
+  .rp-pos-cart-line__qty {
+    font-size: 16px;
+  }
+
+  .rp-pos-cart-line__step-btn {
+    min-width: 34px;
+    min-height: 34px;
+    font-size: 20px;
+  }
+
+  .rp-pos-cart-line__remove-btn {
+    min-height: 32px;
+  }
+
+  .rp-pos-summary-row {
+    font-size: 12px;
+  }
+
+  .rp-pos-total__label {
+    font-size: 15px;
+  }
+
+  .rp-pos-total__amount {
+    font-size: 21px;
+  }
+}
+
 /* Мобильная вкладка «Чек»: список ~до 80dvh, компактные строки ≈5 шт. на экран, остальное — скролл в q-scroll-area */
 .rp-pos-cart--mobile-checkout {
   flex: 1 1 auto;
@@ -421,33 +806,116 @@ watch(
 }
 
 .rp-pos-cart--mobile-checkout .rp-pos-cart-line {
-  --rp-cart-line-height: 68px;
-  min-height: var(--rp-cart-line-height);
-  height: var(--rp-cart-line-height);
-  padding: 4px 8px;
-  gap: 4px;
+  padding: 10px 12px;
 }
 
-.rp-pos-cart--mobile-checkout .rp-pos-cart-line__head {
-  min-height: 0;
+.rp-pos-cart--mobile-checkout .rp-pos-cart-line__inner {
+  gap: 10px;
 }
 
-.rp-pos-cart--mobile-checkout .rp-pos-cart-line__title {
-  font-size: 12px;
-  gap: 4px;
+.rp-pos-cart--mobile-checkout .rp-pos-cart-line__thumb {
+  width: 52px;
 }
 
+.rp-pos-cart--mobile-checkout .rp-pos-cart-line__thumb--sm {
+  width: 48px;
+}
+
+.rp-pos-cart--mobile-checkout .rp-pos-cart-line__title,
 .rp-pos-cart--mobile-checkout .rp-pos-cart-line__price {
-  font-size: 12px;
+  font-size: 16px;
 }
 
-.rp-pos-cart--mobile-checkout .rp-pos-cart-line__details {
-  font-size: 10px;
-  line-height: 1.25;
-  margin-top: 2px;
+.rp-pos-cart--mobile-checkout .rp-pos-cart-line__warehouse-value {
+  font-size: 11px;
+}
+
+.rp-pos-cart--mobile-checkout .rp-pos-cart-line__details-line {
+  font-size: 13px;
+}
+
+.rp-pos-cart--mobile-checkout .rp-pos-cart-line__actions {
+  gap: 6px;
+}
+
+.rp-pos-cart--mobile-checkout .rp-pos-cart-line__stepper {
+  gap: 4px;
+  padding: 5px 6px;
+}
+
+.rp-pos-cart--mobile-checkout .rp-pos-cart-line__qty {
+  font-size: 18px;
+  min-width: 22px;
+}
+
+.rp-pos-cart--mobile-checkout .rp-pos-cart-line__step-btn {
+  min-width: 38px;
+  min-height: 38px;
+  font-size: 23px;
+}
+
+.rp-pos-cart--mobile-checkout .rp-pos-cart-line__remove-btn {
+  min-height: 34px;
 }
 
 .rp-pos-cart--mobile-checkout .rp-pos-cart-summary {
   flex-shrink: 0;
+}
+
+/* Узкий viewport: ещё компактнее (правила ниже mobile-checkout, перекрывают 16px). */
+@media (max-width: 420px) {
+  .rp-pos-cart-line__title,
+  .rp-pos-cart-line__price {
+    font-size: 14px;
+  }
+
+  .rp-pos-cart-line__details-line {
+    font-size: 12px;
+  }
+
+  .rp-pos-cart-line__warehouse-value {
+    font-size: 10px;
+  }
+
+  .rp-pos-cart-line__qty {
+    font-size: 16px;
+  }
+
+  .rp-pos-cart-line__step-btn {
+    min-width: 34px;
+    min-height: 34px;
+    font-size: 20px;
+  }
+
+  .rp-pos-cart-line__remove-btn {
+    min-height: 32px;
+  }
+
+  .rp-pos-cart--mobile-checkout .rp-pos-cart-line__title,
+  .rp-pos-cart--mobile-checkout .rp-pos-cart-line__price {
+    font-size: 14px;
+  }
+
+  .rp-pos-cart--mobile-checkout .rp-pos-cart-line__details-line {
+    font-size: 12px;
+  }
+
+  .rp-pos-cart--mobile-checkout .rp-pos-cart-line__warehouse-value {
+    font-size: 10px;
+  }
+
+  .rp-pos-cart--mobile-checkout .rp-pos-cart-line__qty {
+    font-size: 16px;
+  }
+
+  .rp-pos-cart--mobile-checkout .rp-pos-cart-line__step-btn {
+    min-width: 34px;
+    min-height: 34px;
+    font-size: 20px;
+  }
+
+  .rp-pos-cart--mobile-checkout .rp-pos-cart-line__remove-btn {
+    min-height: 32px;
+  }
 }
 </style>

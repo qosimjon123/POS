@@ -15,7 +15,7 @@
 
     <div class="rp-pin-dots row justify-center">
       <span
-        v-for="i in 4"
+        v-for="i in 6"
         :key="i"
         class="rp-pin-dot"
         :class="{
@@ -24,63 +24,69 @@
       />
     </div>
 
-    <div class="rp-numpad" :class="{ 'rp-numpad--disabled': !scanned }">
-      <button
-        v-for="n in numKeys"
-        :key="n.key"
-        type="button"
-        class="rp-num-btn"
-        :class="{
-          'rp-num-btn--empty': n.key === 'empty',
-          'rp-num-btn--action': n.key === 'back',
-        }"
-        :disabled="!scanned || n.key === 'empty'"
-        @click="onNumKey(n.key)"
-      >
-        <template v-if="n.key === 'back'">
-          <q-icon name="backspace" size="28px" class="rp-icon-fg" />
-        </template>
-        <template v-else-if="n.key !== 'empty'">{{ n.label }}</template>
-      </button>
-    </div>
+    <RpNumericTouchpad
+      v-model="pin"
+      class="rp-pin-numpad"
+      :disabled="!scanned || verifying"
+      :max-length="6"
+      size="lg"
+      shape="circle"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia';
+import { ref, watch } from 'vue';
+import { useQuasar } from 'quasar';
 import { useI18n } from 'vue-i18n';
+import { useRouter } from 'vue-router';
 
+import RpNumericTouchpad from 'src/components/common/RpNumericTouchpad.vue';
 import { useLoginStore } from 'src/stores/login';
+import { tryDecryptPairingQr } from 'src/utils/pinQrCrypto';
 
 const { t } = useI18n();
+const $q = useQuasar();
+const router = useRouter();
 
 const login = useLoginStore();
-const { scanned, pin } = storeToRefs(login);
+const { scanned, pin, qrPairingEnvelope } = storeToRefs(login);
 
-const numKeys = [
-  { key: '1', label: '1' },
-  { key: '2', label: '2' },
-  { key: '3', label: '3' },
-  { key: '4', label: '4' },
-  { key: '5', label: '5' },
-  { key: '6', label: '6' },
-  { key: '7', label: '7' },
-  { key: '8', label: '8' },
-  { key: '9', label: '9' },
-  { key: 'empty', label: '' },
-  { key: '0', label: '0' },
-  { key: 'back', label: '' },
-] as const;
+const verifying = ref(false);
 
-function onNumKey(key: string) {
-  if (!scanned.value) return;
-  if (key === 'back') {
-    login.setPin(pin.value.slice(0, -1));
+watch(pin, async (p) => {
+  if (p.length !== 6 || !scanned.value || verifying.value) return;
+  const raw = qrPairingEnvelope.value;
+  if (!raw) return;
+
+  if (!globalThis.crypto?.subtle) {
+    $q.notify({
+      type: 'negative',
+      message: t('login.tokenCryptoUnavailable'),
+      position: 'top',
+    });
     return;
   }
-  if (pin.value.length >= 4) return;
-  login.setPin(pin.value + key);
-}
+
+  verifying.value = true;
+  try {
+    const res = await tryDecryptPairingQr(raw, p);
+    if (!res) {
+      $q.notify({
+        type: 'negative',
+        message: t('login.qrPinWrong'),
+        position: 'top',
+      });
+      pin.value = '';
+      return;
+    }
+    login.resetQrFlow();
+    void router.push({ name: 'register-select' });
+  } finally {
+    verifying.value = false;
+  }
+});
 </script>
 
 <style scoped lang="scss">
@@ -132,14 +138,14 @@ function onNumKey(key: string) {
 
 .rp-pin-dots {
   flex-wrap: wrap;
-  gap: clamp(12px, 4vw, 30px);
+  gap: clamp(8px, 3vw, 20px);
   margin-bottom: 42px;
   opacity: 0.55;
 }
 
 .rp-pin-dot {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   border: 2px solid var(--rp-muted-foreground);
   background: transparent;
@@ -150,55 +156,8 @@ function onNumKey(key: string) {
   border-color: var(--rp-foreground);
 }
 
-.rp-numpad {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  width: 100%;
-  max-width: 100%;
-  gap: clamp(10px, 3vw, 21px) clamp(10px, 4vw, 30px);
-  justify-items: center;
-  justify-content: center;
+.rp-pin-numpad {
   margin-top: auto;
-  box-sizing: border-box;
-}
-
-.rp-numpad--disabled {
-  opacity: 0.42;
-  pointer-events: none;
-}
-
-.rp-num-btn {
-  box-sizing: border-box;
-  width: 100%;
-  max-width: 85px;
-  aspect-ratio: 1;
-  height: auto;
-  border-radius: 50%;
-  border: none;
-  background: var(--rp-secondary);
-  color: var(--rp-foreground);
-  font-size: clamp(22px, 7vw, 34px);
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
-
-.rp-num-btn:disabled {
-  cursor: default;
-}
-
-.rp-num-btn--empty {
-  background: transparent;
-}
-
-.rp-num-btn--action {
-  background: transparent;
-}
-
-.rp-icon-fg {
-  color: var(--rp-foreground);
 }
 
 .rp-icon-muted {

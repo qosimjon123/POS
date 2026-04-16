@@ -4,7 +4,6 @@
       v-model:search="search"
       :header-layout="desktopHeaderLayout"
       :show-locale-theme-settings="true"
-      :show-client-chip="true"
       :show-cashier-avatar="true"
     />
 
@@ -44,8 +43,17 @@
         <aside
           class="rp-pos-desktop__right-wrap"
           :style="{ width: `${rightWidthPx}px`, flex: '0 0 auto' }"
+          aria-label="POS"
         >
-          <PosRightSidebar />
+          <div class="column no-wrap fit col">
+            <PosRightSidebar />
+            <PosActionsGrid />
+            <PosQuickIconRow />
+            <q-separator />
+            <div class="col-auto q-mt-auto">
+              <PosPaymentBar />
+            </div>
+          </div>
         </aside>
       </div>
     </div>
@@ -60,7 +68,10 @@ import { useQuasar } from 'quasar';
 import PosCartPanel from 'src/components/pos/PosCartPanel.vue';
 import PosHeader from 'src/components/pos/PosHeader.vue';
 import type { PosHeaderLayout } from 'src/components/pos/pos-layout';
+import PosActionsGrid from 'src/components/pos/PosActionsGrid.vue';
+import PosPaymentBar from 'src/components/pos/PosPaymentBar.vue';
 import PosProductsPanel from 'src/components/pos/PosProductsPanel.vue';
+import PosQuickIconRow from 'src/components/pos/PosQuickIconRow.vue';
 import PosRightSidebar from 'src/components/pos/PosRightSidebar.vue';
 import { usePosDesktopLayoutStore } from 'src/stores/pos-desktop-layout';
 
@@ -172,6 +183,15 @@ onBeforeUnmount(() => {
   min-height: 0;
   min-width: 0;
   box-sizing: border-box;
+}
+
+.rp-pos-desktop__cart {
+  overflow: hidden;
+}
+
+.rp-pos-desktop__right-wrap {
+  background: var(--rp-background);
+  border-left: 1px solid var(--rp-border);
 }
 
 .rp-pos-desktop__aside-inner {

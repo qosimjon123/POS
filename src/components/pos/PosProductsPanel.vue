@@ -14,19 +14,78 @@
     </div>
 
     <div class="rp-pos-product-grid">
-      <button
+      <div
         v-for="p in products"
         :key="p.id"
-        type="button"
         class="rp-pos-product-card"
       >
-        <div class="rp-pos-product-image" aria-hidden="true" />
-        <div class="rp-pos-product-title">{{ p.title }}</div>
-        <div class="rp-pos-product-footer row items-center justify-between">
-          <span class="rp-pos-product-price">{{ p.price }}</span>
-          <span v-if="p.badge" class="rp-pos-product-badge">{{ p.badge }}</span>
+        <div
+          class="rp-pos-product-card__quick"
+          role="button"
+          tabindex="0"
+          :aria-label="`${p.title}. ${t('pos.catalogQuickAdd')}`"
+          @click="cartStore.quickAddFromCatalog(p.id)"
+          @keydown.enter.prevent="cartStore.quickAddFromCatalog(p.id)"
+          @keydown.space.prevent="cartStore.quickAddFromCatalog(p.id)"
+        >
+          <div class="rp-pos-product-media">
+            <q-img
+              v-if="p.imageUrl"
+              :src="p.imageUrl"
+              fit="cover"
+              loading="eager"
+              class="rp-pos-product-media__qimg"
+              spinner-size="28px"
+            >
+              <template #error>
+                <div
+                  class="rp-pos-product-media__fallback"
+                  aria-hidden="true"
+                >
+                  <q-icon
+                    name="broken_image"
+                    size="36px"
+                    class="rp-pos-product-media__fallback-icon"
+                  />
+                </div>
+              </template>
+            </q-img>
+            <div
+              v-else
+              class="rp-pos-product-media__fallback"
+              aria-hidden="true"
+            >
+              <q-icon
+                name="image"
+                size="36px"
+                class="rp-pos-product-media__fallback-icon"
+              />
+            </div>
+            <template v-if="p.inCartQty > 0">
+              <div
+                class="rp-pos-product-media__dim"
+                aria-hidden="true"
+              />
+              <div class="rp-pos-product-media__qty">
+                {{ p.inCartQty }}
+              </div>
+            </template>
+            <button
+              type="button"
+              class="rp-pos-product-card__expand"
+              :aria-label="t('pos.catalogExpandLine')"
+              @click.stop="cartStore.openCatalogLineDialog(p.id)"
+            >
+              <q-icon name="unfold_more" size="26px" />
+            </button>
+          </div>
+          <div class="rp-pos-product-title">{{ p.title }}</div>
+          <div class="rp-pos-product-footer row items-center justify-between">
+            <span class="rp-pos-product-price">{{ p.price }}</span>
+            <span v-if="p.badge" class="rp-pos-product-badge">{{ p.badge }}</span>
+          </div>
         </div>
-      </button>
+      </div>
     </div>
   </div>
 </template>
@@ -35,7 +94,10 @@
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
+import { formatUsd, usePosCartStore } from 'src/stores/pos-cart';
+
 const { t } = useI18n();
+const cartStore = usePosCartStore();
 
 const activeId = ref('featured');
 
@@ -48,56 +110,17 @@ const categories = computed(() => [
   { id: 'gift', label: t('pos.giftCards') },
 ]);
 
-const products = computed(() => [
-  {
-    id: '1',
-    title: 'Slim Fit Dress Shirt',
-    price: '$66.49',
-    badge: t('pos.popular'),
-  },
-  {
-    id: '2',
-    title: 'Floral Print Dress',
-    price: '$85.50',
-    badge: t('pos.promo'),
-  },
-  {
-    id: '3',
-    title: 'White High Heels',
-    price: '$190.00',
-    badge: t('pos.vip'),
-  },
-  {
-    id: '4',
-    title: 'Leather Mini Bag',
-    price: '$120.00',
-    badge: t('pos.newBadge'),
-  },
-  {
-    id: '5',
-    title: 'Silk Scarf',
-    price: '$28.00',
-    badge: t('pos.hot'),
-  },
-  {
-    id: '6',
-    title: 'Daily Sneakers',
-    price: '$74.00',
-    badge: t('pos.fast'),
-  },
-  {
-    id: '7',
-    title: 'Gift Card',
-    price: '$25.00',
-    badge: t('pos.quick'),
-  },
-  {
-    id: '8',
-    title: 'Classic Sunglasses',
-    price: '$52.00',
-    badge: t('pos.sale'),
-  },
-]);
+const products = computed(() => {
+  const qty = cartStore.qtyByProductId;
+  return cartStore.catalog.map((p) => ({
+    id: p.id,
+    title: p.title,
+    price: formatUsd(p.retailRate),
+    imageUrl: p.imageUrl,
+    inCartQty: qty[p.id] ?? 0,
+    badge: p.badgeKey ? t(`pos.${p.badgeKey}`) : undefined,
+  }));
+});
 </script>
 
 <style scoped lang="scss">
@@ -151,7 +174,6 @@ const products = computed(() => [
   flex: 1;
   min-width: 0;
   display: grid;
-  /* Минимум две карточки в ряд (узкая центральная колонка не сваливается в одну колонку). */
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
   align-content: start;
@@ -166,15 +188,11 @@ const products = computed(() => [
 }
 
 .rp-pos-product-card {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 12px;
-  border: none;
   border-radius: var(--rp-radius-md);
   background: var(--rp-card);
-  text-align: left;
-  cursor: pointer;
   transition: filter 0.15s ease;
 }
 
@@ -186,37 +204,153 @@ body.body--dark .rp-pos-product-card:hover {
   filter: brightness(1.06);
 }
 
-.rp-pos-product-card:focus-visible {
+.rp-pos-product-card__quick {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  padding: 12px;
+  border: none;
+  border-radius: var(--rp-radius-md);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.rp-pos-product-card__quick:focus-visible {
   outline: 2px solid var(--rp-primary);
   outline-offset: 2px;
 }
 
-.rp-pos-product-image {
+.rp-pos-product-card__expand {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid var(--rp-border);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--rp-card) 92%, transparent);
+  color: var(--rp-foreground);
+  box-shadow: 0 2px 8px color-mix(in srgb, #000 12%, transparent);
+  cursor: pointer;
+  transition:
+    background 0.12s ease,
+    border-color 0.12s ease,
+    transform 0.12s ease;
+}
+
+.rp-pos-product-card__expand:hover {
+  background: color-mix(in srgb, var(--rp-primary) 12%, var(--rp-card));
+  border-color: color-mix(in srgb, var(--rp-primary) 35%, var(--rp-border));
+}
+
+.rp-pos-product-card__expand:focus-visible {
+  outline: 2px solid var(--rp-primary);
+  outline-offset: 2px;
+}
+
+.rp-pos-product-media {
+  position: relative;
   width: 100%;
+  min-width: 0;
+  min-height: 120px;
   aspect-ratio: 4 / 3;
+  flex-shrink: 0;
   border-radius: var(--rp-radius-sm);
+  overflow: hidden;
+  background: var(--rp-muted);
+  container-type: inline-size;
+  container-name: product-tile;
+}
+
+/* q-img внутри flex + <button> иначе даёт нулевую высоту; контейнер держит 4:3, картинка заполняет слой. */
+.rp-pos-product-media__qimg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+}
+
+.rp-pos-product-media__qimg :deep(.q-img__container) {
+  padding-bottom: 0 !important;
+  height: 100% !important;
+}
+
+.rp-pos-product-media__fallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: inherit;
   background-color: var(--rp-muted);
   background-image:
     repeating-linear-gradient(
       45deg,
-      color-mix(in srgb, var(--rp-foreground) 8%, transparent) 25%,
+      color-mix(in srgb, var(--rp-foreground) 10%, transparent) 25%,
       transparent 25%,
       transparent 75%,
-      color-mix(in srgb, var(--rp-foreground) 8%, transparent) 75%,
-      color-mix(in srgb, var(--rp-foreground) 8%, transparent)
+      color-mix(in srgb, var(--rp-foreground) 10%, transparent) 75%,
+      color-mix(in srgb, var(--rp-foreground) 10%, transparent)
     ),
     repeating-linear-gradient(
       45deg,
-      color-mix(in srgb, var(--rp-foreground) 8%, transparent) 25%,
-      var(--rp-card) 25%,
-      var(--rp-card) 75%,
-      color-mix(in srgb, var(--rp-foreground) 8%, transparent) 75%,
-      color-mix(in srgb, var(--rp-foreground) 8%, transparent)
+      color-mix(in srgb, var(--rp-foreground) 10%, transparent) 25%,
+      var(--rp-muted) 25%,
+      var(--rp-muted) 75%,
+      color-mix(in srgb, var(--rp-foreground) 10%, transparent) 75%,
+      color-mix(in srgb, var(--rp-foreground) 10%, transparent)
     );
   background-position:
     0 0,
     10px 10px;
   background-size: 20px 20px;
+}
+
+.rp-pos-product-media__fallback-icon {
+  opacity: 0.45;
+  color: var(--rp-muted-foreground);
+}
+
+.rp-pos-product-media__dim {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  background: color-mix(in srgb, #000 48%, transparent);
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.rp-pos-product-media__qty {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 4;
+  transform: translate(-50%, -50%);
+  padding: 0;
+  margin: 0;
+  font-size: clamp(1.75rem, 32cqi, 3.25rem);
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+  background: none;
+  text-shadow:
+    0 1px 3px color-mix(in srgb, #000 85%, transparent),
+    0 2px 16px color-mix(in srgb, #000 55%, transparent);
+  pointer-events: none;
 }
 
 .rp-pos-product-title {

@@ -8,6 +8,7 @@
           v-model:search="searchQuery"
           v-model:mobile-tab="mobileTab"
         />
+        <PosLineItemDialog />
       </div>
     </RpKeyboard>
   </q-page>
@@ -19,6 +20,7 @@ import { useQuasar } from 'quasar';
 
 import RpKeyboard from 'src/components/common/RpKeyboard.vue';
 import PosDesktopLayout from 'src/components/pos/PosDesktopLayout.vue';
+import PosLineItemDialog from 'src/components/pos/PosLineItemDialog.vue';
 import PosMobileLayout from 'src/components/pos/PosMobileLayout.vue';
 import type { PosMobileTab } from 'src/components/pos/pos-mobile-tab';
 import { resolvePosShell, type PosShell } from 'src/components/pos/pos-layout';

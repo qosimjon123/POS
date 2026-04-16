@@ -4,7 +4,6 @@
       v-model:search="search"
       header-layout="mobile"
       :show-locale-theme-settings="false"
-      :show-client-chip="false"
       :show-cashier-avatar="false"
     />
 

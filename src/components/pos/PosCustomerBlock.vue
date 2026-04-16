@@ -1,6 +1,7 @@
 <template>
   <section class="rp-pos-customer" aria-labelledby="pos-customer-heading">
     <h2 id="pos-customer-heading" class="visually-hidden">{{ t('pos.clientLabel') }}</h2>
+    <PosCustomerPicker class="rp-pos-customer__picker" @create="onCreateCustomer" />
     <div class="rp-pos-detail-row">
       <span class="rp-pos-detail-label">{{ t('pos.loyaltyCard') }}</span>
       <span class="rp-pos-detail-value">55103</span>
@@ -18,12 +19,39 @@
       <span class="rp-pos-detail-value">712 1st Ave SW, Kirkland</span>
     </div>
   </section>
+
+  <PosCustomerCreateDialog v-model="createDialogOpen" @saved="onCustomerSaved" />
 </template>
 
 <script setup lang="ts">
+import { Notify } from 'quasar';
+import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
+import type { PosCustomerCreatePayload } from 'src/components/pos/PosCustomerCreateForm.vue';
+import PosCustomerCreateDialog from 'src/components/pos/PosCustomerCreateDialog.vue';
+import PosCustomerPicker from 'src/components/pos/PosCustomerPicker.vue';
+
+const emit = defineEmits<{
+  'customer-saved': [payload: PosCustomerCreatePayload];
+}>();
+
 const { t } = useI18n();
+
+const createDialogOpen = ref(false);
+
+function onCreateCustomer() {
+  createDialogOpen.value = true;
+}
+
+function onCustomerSaved(payload: PosCustomerCreatePayload) {
+  Notify.create({
+    type: 'positive',
+    message: t('pos.customerSavedStub'),
+    timeout: 2000,
+  });
+  emit('customer-saved', payload);
+}
 </script>
 
 <style scoped lang="scss">
@@ -40,11 +68,21 @@ const { t } = useI18n();
 }
 
 .rp-pos-customer {
-  padding: 16px;
+  padding: 0;
   display: flex;
   flex-direction: column;
   gap: 12px;
   border-bottom: 1px solid var(--rp-border);
+}
+
+@media (min-width: 1024px) {
+  .rp-pos-customer {
+    padding: 1em;
+  }
+}
+
+.rp-pos-customer__picker {
+  flex-shrink: 0;
 }
 
 .rp-pos-detail-row {

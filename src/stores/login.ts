@@ -7,6 +7,8 @@ export const useLoginStore = defineStore('login', () => {
   const mode = ref<LoginMode>('qr');
 
   const scanned = ref(false);
+  /** JSON-строка конверта v1 со страницы «Ключ и QR» (после скана / файла). */
+  const qrPairingEnvelope = ref<string | null>(null);
   const pin = ref('');
   const mobileStep = ref(1);
 
@@ -16,6 +18,7 @@ export const useLoginStore = defineStore('login', () => {
 
   function resetQrFlow() {
     scanned.value = false;
+    qrPairingEnvelope.value = null;
     pin.value = '';
     mobileStep.value = 1;
   }
@@ -32,6 +35,10 @@ export const useLoginStore = defineStore('login', () => {
     scanned.value = value;
   }
 
+  function setQrPairingEnvelope(raw: string | null) {
+    qrPairingEnvelope.value = raw;
+  }
+
   function setPin(value: string) {
     pin.value = value;
   }
@@ -43,6 +50,7 @@ export const useLoginStore = defineStore('login', () => {
   return {
     mode,
     scanned,
+    qrPairingEnvelope,
     pin,
     mobileStep,
     email,
@@ -50,6 +58,7 @@ export const useLoginStore = defineStore('login', () => {
     showPassword,
     setMode,
     setScanned,
+    setQrPairingEnvelope,
     setPin,
     setMobileStep,
     resetQrFlow,

@@ -6,7 +6,7 @@
         <template v-if="headerLayout === 'mobile'">
           <div class="rp-pos-store-line1 row items-center no-wrap">
             <div class="rp-pos-store-name col ellipsis">
-              {{ t('pos.storeLabel') }} · {{ t('pos.registerLabel') }} 1
+              {{ registerHeaderTitle }}
             </div>
             <div class="rp-pos-store-status row items-center no-wrap">
               <ConnectionStatus />
@@ -34,10 +34,10 @@
           <div class="rp-pos-store-md row items-center no-wrap">
             <div class="rp-pos-store-md-text col">
               <div class="rp-pos-store-name">
-                {{ t('pos.storeLabel') }} · {{ t('pos.registerLabel') }} 1
+                {{ registerHeaderTitle }}
               </div>
-              <div class="rp-pos-store-meta">
-                {{ t('pos.openedAt', { time: openedTime }) }}
+              <div v-if="registerOpenedAtLabel" class="rp-pos-store-meta">
+                {{ registerOpenedAtLabel }}
               </div>
             </div>
             <q-btn
@@ -60,10 +60,10 @@
         </template>
         <template v-else>
           <div class="rp-pos-store-name">
-            {{ t('pos.storeLabel') }} · {{ t('pos.registerLabel') }} 1
+            {{ registerHeaderTitle }}
           </div>
-          <div class="rp-pos-store-meta">
-            {{ t('pos.openedAt', { time: openedTime }) }}
+          <div v-if="registerOpenedAtLabel" class="rp-pos-store-meta">
+            {{ registerOpenedAtLabel }}
           </div>
         </template>
       </div>
@@ -131,21 +131,6 @@
           <TimeDisplay />
         </template>
         <q-btn
-          v-if="showClientChip"
-          flat
-          dense
-          no-caps
-          padding="sm sm"
-          class="rp-pos-client-chip"
-          :aria-label="t('pos.clientLabel')"
-        >
-          <q-icon name="person" size="18px" class="rp-icon-fg q-mr-xs" />
-          <span class="rp-pos-client-label ellipsis">{{
-            t('pos.walkInClient')
-          }}</span>
-          <q-icon name="expand_more" size="18px" class="rp-icon-muted q-ml-xs" />
-        </q-btn>
-        <q-btn
           v-if="showCartShortcut"
           flat
           dense
@@ -172,13 +157,13 @@
     v-if="!isNative"
     ref="scanVideoRef"
     class="rp-pos-scan-video"
-    :class="{ 'rp-pos-scan-video--hidden': !scanner.needsVideoPreview }"
+    :class="{ 'rp-pos-scan-video--hidden': !showHeaderScanPreview }"
     muted
     playsinline
   />
 
   <div
-    v-if="scanner.scanning && scanner.needsVideoPreview"
+    v-if="scanner.scanning && scanner.needsVideoPreview && showHeaderScanPreview"
     class="rp-pos-scan-hud"
   >
     <q-btn
@@ -196,6 +181,7 @@
 
 <script setup lang="ts">
 import { Capacitor } from '@capacitor/core';
+import { storeToRefs } from 'pinia';
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useQuasar } from 'quasar';
 import { useI18n } from 'vue-i18n';
@@ -206,6 +192,7 @@ import LanguageSelector from 'src/components/system/LanguageSelector.vue';
 import SettingsButton from 'src/components/system/SettingsButton.vue';
 import ThemeToggle from 'src/components/system/ThemeToggle.vue';
 import TimeDisplay from 'src/components/system/TimeDisplay.vue';
+import { useRegisterContextStore } from 'src/stores/register-context';
 import { useScannerStore } from 'src/stores/scanner';
 import { useTimeStore } from 'src/stores/time';
 
@@ -219,13 +206,11 @@ const props = withDefaults(
   defineProps<{
     headerLayout: PosHeaderLayout;
     showCartShortcut?: boolean;
-    showClientChip?: boolean;
     showLocaleThemeSettings?: boolean;
     showCashierAvatar?: boolean;
   }>(),
   {
     showCartShortcut: false,
-    showClientChip: true,
     showLocaleThemeSettings: true,
     showCashierAvatar: true,
   },
@@ -236,11 +221,20 @@ const search = defineModel<string>('search', { required: true });
 const $q = useQuasar();
 const { t, locale } = useI18n();
 const scanner = useScannerStore();
+const { webPreviewVideoTarget } = storeToRefs(scanner);
+const registerContext = useRegisterContextStore();
+const { selectedRegister } = storeToRefs(registerContext);
 const timeStore = useTimeStore();
 const kbd = useRpKeyboard();
 const searchInputRef = ref<{ focus?: () => void } | null>(null);
 const scanVideoRef = ref<HTMLVideoElement | null>(null);
 const isNative = Capacitor.isNativePlatform();
+
+const showHeaderScanPreview = computed(
+  () =>
+    webPreviewVideoTarget.value !== null &&
+    scanVideoRef.value === webPreviewVideoTarget.value,
+);
 
 const shellModifierClass = computed(
   () => `rp-pos-header-shell--${props.headerLayout}`,
@@ -269,30 +263,52 @@ async function toggleSearchPanel() {
   }
 }
 
-const openedTime = computed(() =>
-  new Intl.DateTimeFormat(locale.value, {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  }).format(new Date(timeStore.now)),
-);
+const registerHeaderTitle = computed(() => {
+  const r = selectedRegister.value;
+  if (r) {
+    return `${r.storeName} · ${r.name}`;
+  }
+  return `${t('pos.storeLabel')} · ${t('pos.registerLabel')}`;
+});
+
+const registerOpenedAtLabel = computed(() => {
+  const iso = selectedRegister.value?.openedAt;
+  if (!iso) return '';
+  try {
+    const time = new Intl.DateTimeFormat(locale.value, {
+      dateStyle: 'short',
+      timeStyle: 'short',
+    }).format(new Date(iso));
+    return t('pos.openedAt', { time });
+  } catch {
+    return t('pos.openedAt', { time: iso });
+  }
+});
 
 onMounted(() => {
   void scanner.init();
   timeStore.ensureTick();
 });
 
+watch(
+  scanVideoRef,
+  (el) => {
+    scanner.setDefaultWebScanVideo(isNative ? null : el);
+  },
+  { immediate: true },
+);
+
 onUnmounted(() => {
+  scanner.setDefaultWebScanVideo(null);
   void scanner.stopScan();
 });
 
 watch(
   () => scanner.lastResult,
   (r) => {
-    if (r?.value) {
-      search.value = r.value;
-      scanner.clearLastResult();
-    }
+    if (!r?.value) return;
+    if (scanner.isNextScanForCustomerCreateCard()) return;
+    search.value = r.value;
   },
 );
 
@@ -312,7 +328,7 @@ function onSearchBlur() {
 }
 
 function onScanClick() {
-  void scanner.startScan(scanVideoRef.value ?? undefined);
+  void scanner.startScan(scanVideoRef.value ?? null);
 }
 
 function onStopScan() {
@@ -494,21 +510,6 @@ function onKeyboardClick() {
   gap: 10px;
 }
 
-.rp-pos-client-chip {
-  min-height: 38px;
-  border-radius: var(--rp-radius-md);
-  padding: 6px 10px;
-  background: var(--rp-background);
-  border: 1px solid var(--rp-border);
-  color: var(--rp-foreground);
-  max-width: 160px;
-}
-
-.rp-pos-client-label {
-  font-size: 13px;
-  font-weight: 500;
-}
-
 .rp-icon-fg {
   color: var(--rp-foreground);
 }
@@ -675,10 +676,6 @@ function onKeyboardClick() {
     min-width: 0;
   }
 
-  .rp-pos-client-chip {
-    max-width: 148px;
-    padding: 4px 8px;
-  }
 }
 
 /* Узкий десктоп (breakpoint md): две строки — магазин+тулбар, поиск на всю ширину */

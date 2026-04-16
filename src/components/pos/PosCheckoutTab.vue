@@ -45,41 +45,13 @@
         </div>
 
         <q-card-section class="rp-pos-checkout-modal__body">
-          <div class="text-subtitle2 q-mb-sm">{{ t('pos.selectClient') }}</div>
-          <q-select
-            v-model="clientMode"
-            dense
-            outlined
-            emit-value
-            map-options
-            :options="clientOptions"
-            class="rp-pos-checkout-tab__field"
-          />
+          <PosCustomerBlock class="rp-pos-checkout-tab__customer" />
 
-          <PosCustomerBlock class="rp-pos-checkout-tab__customer q-mt-md" />
-
-          <div class="text-subtitle2 q-mt-lg q-mb-sm">{{ t('pos.discounts') }}</div>
-          <q-btn-toggle
-            v-model="discountMode"
-            spread
-            flat
-            dense
-            no-caps
-            toggle-color="primary"
-            :options="discountModeOptions"
-            class="full-width rp-pos-checkout-tab__discount-toggle"
-          />
-          <q-input
-            v-model="discountValue"
-            dense
-            outlined
-            type="number"
-            :suffix="discountMode === 'percent' ? '%' : undefined"
-            :prefix="discountMode === 'fixed' ? '$' : undefined"
-            :placeholder="t('pos.discountValuePlaceholder')"
-            class="q-mt-sm rp-pos-checkout-tab__field"
-            @focus="onDiscountFieldFocus"
-            @blur="onDiscountFieldBlur"
+          <PosDiscountCouponFields
+            v-model:discount-mode="discountMode"
+            v-model:discount-value="discountValue"
+            v-model:coupon-code="couponCode"
+            layout="checkout"
           />
 
           <div class="text-subtitle2 q-mt-lg q-mb-sm">{{ t('pos.checkoutSummary') }}</div>
@@ -119,15 +91,14 @@ import type { TouchPanValue } from 'quasar';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-import { useRpKeyboard } from 'src/components/common/keyboard-inject';
 import PosCartPanel from 'src/components/pos/PosCartPanel.vue';
 import PosCustomerBlock from 'src/components/pos/PosCustomerBlock.vue';
+import PosDiscountCouponFields from 'src/components/pos/PosDiscountCouponFields.vue';
 import PosPaymentBar from 'src/components/pos/PosPaymentBar.vue';
 
 const vTouchPan = TouchPan;
 
 const { t } = useI18n();
-const kbd = useRpKeyboard();
 
 const checkoutModalOpen = ref(false);
 const dragY = ref(0);
@@ -179,34 +150,9 @@ const onHandlePan: TouchPanValue = (details) => {
   }
 };
 
-function onDiscountFieldFocus() {
-  kbd.bindInput(
-    () => discountValue.value,
-    (v) => {
-      discountValue.value = v;
-    },
-  );
-  kbd.open();
-}
-
-function onDiscountFieldBlur() {
-  kbd.close();
-  kbd.resetBinding();
-}
-
-const clientMode = ref<'walkin' | 'loyalty'>('walkin');
-const clientOptions = computed(() => [
-  { label: t('pos.walkInClient'), value: 'walkin' as const },
-  { label: t('pos.loyaltyCard'), value: 'loyalty' as const },
-]);
-
 const discountMode = ref<'percent' | 'fixed'>('percent');
 const discountValue = ref('');
-
-const discountModeOptions = computed(() => [
-  { label: t('pos.discountModePercent'), value: 'percent' as const },
-  { label: t('pos.discountModeFixed'), value: 'fixed' as const },
-]);
+const couponCode = ref('');
 
 function onPay() {
   /* интеграция с оплатой позже */
@@ -283,8 +229,8 @@ function onPay() {
 
 .rp-pos-checkout-modal__card {
   width: 100%;
-  height: 90vh;
-  max-height: 90vh;
+  height: 95vh;
+  max-height: 95vh;
   border-radius: 16px 16px 0 0;
   display: flex;
   flex-direction: column;
@@ -320,15 +266,6 @@ function onPay() {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   padding-bottom: max(16px, var(--rp-safe-inset-bottom));
-}
-
-.rp-pos-checkout-tab__field {
-  width: 100%;
-}
-
-.rp-pos-checkout-tab__discount-toggle {
-  border: 1px solid var(--rp-border);
-  border-radius: var(--rp-radius-md);
 }
 
 :deep(.rp-pos-checkout-tab__customer) {

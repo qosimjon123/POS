@@ -19,8 +19,8 @@
         <div class="rp-scan-actions row q-gutter-sm q-mt-md flex-wrap">
           <q-btn
             v-if="!scanner.scanning"
-            unelevated
-            color="primary"
+            :text-color="!$q.dark.isActive ? 'dark' : 'white'"
+            :color="$q.dark.isActive ? 'dark' : 'white'"
             class="rp-scan-btn"
             :disable="!scanner.supported"
             :label="t('login.scanQr')"
@@ -28,13 +28,13 @@
           />
           <q-btn
             v-if="!scanner.scanning"
-            unelevated
-            color="primary"
             class="rp-scan-btn"
             icon="image"
             :disable="fileBusy"
             :loading="fileBusy"
             :label="t('login.scanFromFile')"
+            :text-color="!$q.dark.isActive ? 'dark' : 'white'"
+            :color="$q.dark.isActive ? 'dark' : 'white'"
             @click="openFilePicker"
           />
           <input
@@ -48,9 +48,10 @@
           />
           <q-btn
             v-if="scanner.scanning && !isNative"
-            outline
             class="rp-scan-btn"
             :label="t('login.stopScan')"
+            :text-color="!$q.dark.isActive ? 'dark' : 'white'"
+            :color="$q.dark.isActive ? 'dark' : 'white'"
             @click="onStopScan"
           />
         </div>
@@ -68,7 +69,7 @@
       v-if="!isNative"
       ref="videoRef"
       class="rp-scan-video"
-      :class="{ 'rp-scan-video--hidden': !scanner.needsVideoPreview }"
+      :class="{ 'rp-scan-video--hidden': !showLoginScanPreview }"
       muted
       playsinline
     />
@@ -82,6 +83,7 @@
 
 <script setup lang="ts">
 import { Capacitor } from '@capacitor/core';
+import { storeToRefs } from 'pinia';
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
@@ -90,11 +92,18 @@ import { useScannerStore } from 'src/stores/scanner';
 const { t } = useI18n();
 
 const scanner = useScannerStore();
+const { webPreviewVideoTarget } = storeToRefs(scanner);
 const videoRef = ref<HTMLVideoElement | null>(null);
 const fileInputRef = ref<HTMLInputElement | null>(null);
 const fileBusy = ref(false);
 const isNative = Capacitor.isNativePlatform();
 const scannerReady = computed(() => scanner.supported);
+
+const showLoginScanPreview = computed(
+  () =>
+    webPreviewVideoTarget.value !== null &&
+    videoRef.value === webPreviewVideoTarget.value,
+);
 
 onMounted(() => {
   void scanner.init();
@@ -105,7 +114,7 @@ onUnmounted(() => {
 });
 
 async function onStartScan() {
-  await scanner.startScan(videoRef.value ?? undefined);
+  await scanner.startScan(videoRef.value ?? null);
 }
 
 function onStopScan() {

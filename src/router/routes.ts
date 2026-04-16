@@ -6,7 +6,27 @@ const routes: RouteRecordRaw[] = [
     component: () => import('layouts/MainLayout.vue'),
     children: [
       { path: '', component: () => import('pages/Login.vue') },
-      { path: 'pos', component: () => import('pages/PosPage.vue') },
+      {
+        path: 'registers',
+        name: 'register-select',
+        component: () => import('pages/RegisterSelectPage.vue'),
+      },
+      { path: 'pos', name: 'pos', component: () => import('pages/PosPage.vue') },
+      {
+        path: 'token-pairing',
+        name: 'token-pairing',
+        component: () => import('pages/TokenPairingPage.vue'),
+      },
+      {
+        path: 'pos-ui-playground',
+        name: 'pos-ui-playground',
+        component: () => import('pages/pos-ui-playground/PosUiPlaygroundHub.vue'),
+      },
+      {
+        path: 'pos-ui-playground/view/:slug',
+        name: 'pos-ui-playground-stub',
+        component: () => import('pages/pos-ui-playground/PosUiPlaygroundStub.vue'),
+      },
     ],
   },
 

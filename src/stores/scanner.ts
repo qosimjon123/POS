@@ -3,7 +3,7 @@ import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 import { Notify } from 'quasar';
 import type { QNotifyCreateOptions } from 'quasar';
 import { defineStore } from 'pinia';
-import { computed, nextTick, ref } from 'vue';
+import { computed, nextTick, ref, shallowRef } from 'vue';
 
 import { i18n } from 'src/i18n';
 import {
@@ -101,9 +101,36 @@ export const useScannerStore = defineStore('scanner', () => {
   const errorMessage = ref<string | null>(null);
   let stopSession: (() => Promise<void>) | null = null;
 
+  /** Шапка POS регистрирует `<video>`; пикер клиента может вызвать скан без своего элемента. */
+  const defaultWebScanVideo = shallowRef<HTMLVideoElement | null>(null);
+  /** Какой `<video>` сейчас получает stream (чтобы не показывать два полноэкранных превью). */
+  const webPreviewVideoTarget = shallowRef<HTMLVideoElement | null>(null);
+
+  /**
+   * Следующий результат скана ввести в поле карты формы создания клиента
+   * (не в поиск товаров и не в выбор клиента).
+   */
+  const nextScanForCustomerCreateCard = ref(false);
+
   const needsVideoPreview = computed(
     () => !Capacitor.isNativePlatform() && scanning.value,
   );
+
+  function setDefaultWebScanVideo(el: HTMLVideoElement | null) {
+    defaultWebScanVideo.value = el;
+  }
+
+  function armNextScanForCustomerCreateCard() {
+    nextScanForCustomerCreateCard.value = true;
+  }
+
+  function isNextScanForCustomerCreateCard(): boolean {
+    return nextScanForCustomerCreateCard.value;
+  }
+
+  function disarmNextScanForCustomerCreateCard() {
+    nextScanForCustomerCreateCard.value = false;
+  }
 
   async function init() {
     errorMessage.value = null;
@@ -163,16 +190,29 @@ export const useScannerStore = defineStore('scanner', () => {
 
       await nextTick();
 
+      webPreviewVideoTarget.value = null;
+
       const webPerm = await ensureWebCameraPermission();
       if (!webPerm) {
         notifyWebCameraDenied();
         return;
       }
 
+      const resolved =
+        videoElement !== undefined && videoElement !== null
+          ? videoElement
+          : defaultWebScanVideo.value;
+      if (!resolved) {
+        errorMessage.value = i18n.global.t('scanner.unexpectedError');
+        return;
+      }
+
+      webPreviewVideoTarget.value = resolved;
+
       try {
         stopSession = await startBarcodeScan({
           ...(runtimeOverride ? { runtime: runtimeOverride } : {}),
-          videoElement: videoElement ?? null,
+          videoElement: resolved,
           onResult: (r) => {
             lastResult.value = r;
           },
@@ -182,9 +222,11 @@ export const useScannerStore = defineStore('scanner', () => {
           onSessionEnd: () => {
             scanning.value = false;
             stopSession = null;
+            webPreviewVideoTarget.value = null;
           },
         });
       } catch (e) {
+        webPreviewVideoTarget.value = null;
         const msg = e instanceof Error ? e.message : String(e);
         if (msg === 'WEB_CAMERA_PERMISSION_DENIED') {
           notifyWebCameraDenied();
@@ -212,6 +254,8 @@ export const useScannerStore = defineStore('scanner', () => {
       stopSession = null;
     }
     scanning.value = false;
+    webPreviewVideoTarget.value = null;
+    disarmNextScanForCustomerCreateCard();
   }
 
   function clearLastResult() {
@@ -241,10 +285,16 @@ export const useScannerStore = defineStore('scanner', () => {
     lastResult,
     errorMessage,
     needsVideoPreview,
+    defaultWebScanVideo,
+    webPreviewVideoTarget,
     init,
     startScan,
     stopScan,
     clearLastResult,
     scanFromFile,
+    setDefaultWebScanVideo,
+    armNextScanForCustomerCreateCard,
+    isNextScanForCustomerCreateCard,
+    disarmNextScanForCustomerCreateCard,
   };
 });

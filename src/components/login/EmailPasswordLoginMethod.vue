@@ -15,8 +15,8 @@
         v-model="email"
         outlined
         class="rp-field"
-        color="primary"
-        :dark="$q.dark.isActive"
+        :color="!$q.dark.isActive ? 'dark' : 'light'"
+        :text-color="!$q.dark.isActive ? 'dark' : 'light'"
         :label="t('login.loginLabel')"
         :rules="[(val) => !!val || t('login.required')]"
         lazy-rules
@@ -28,8 +28,8 @@
         v-model="password"
         outlined
         class="rp-field"
-        color="primary"
-        :dark="$q.dark.isActive"
+        :color="$q.dark.isActive ? 'dark' : 'light'"
+        :text-color="$q.dark.isActive ? 'dark' : 'light'"
         :type="showPassword ? 'text' : 'password'"
         :label="t('login.passwordLabel')"
         :rules="[(val) => !!val || t('login.required')]"
@@ -109,8 +109,8 @@ function onFieldBlur() {
 }
 
 function onSubmit() {
-  // Wire to auth API when ready
-  void router.push('/pos');
+  // После реальной авторизации — список касс с API; пока переход к выбору кассы
+  void router.push({ name: 'register-select' });
 }
 </script>
 
@@ -143,51 +143,11 @@ function onSubmit() {
   line-height: 1.5;
 }
 
-.rp-field :deep(.q-field__control) {
-  min-height: 56px;
-}
-
-/* Тёмная тема: явный цвет ввода и лейбла (Quasar иначе может оставить тёмный текст на тёмном фоне) */
-.rp-field :deep(.q-field__native),
-.rp-field :deep(.q-field__native input) {
-  color: var(--rp-foreground);
-}
-
-.rp-field :deep(.q-field__label) {
-  color: var(--rp-muted-foreground);
-}
-
-.rp-field :deep(.q-field--focused .q-field__label),
-.rp-field :deep(.q-field--highlighted .q-field__label),
-.rp-field :deep(.q-field--float .q-field__label) {
-  color: var(--rp-primary);
-}
-
-.rp-field :deep(.q-field__marginal) {
-  color: var(--rp-muted-foreground);
-}
-
-/* Убирает «лишний» прямоугольник под outlined-полем при ошибке (конфликт слоёв/нижней зоны). */
-.rp-field :deep(.q-field__bottom) {
-  margin-top: 0;
-  padding-top: 6px;
-  border: none;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-  outline: none;
-}
-
-.rp-field :deep(.q-field__messages) {
-  line-height: 1.35;
-}
-
 .rp-sign-in-btn {
   font-size: 17px;
   font-weight: 600;
   min-height: 54px;
   padding: 14px 24px;
-  /* Токены темы: на светлом — тёмная кнопка, в dark — светлая, чтобы не терялась на чёрном фоне */
   background: var(--rp-primary) !important;
   color: var(--rp-primary-foreground) !important;
 }
