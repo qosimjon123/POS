@@ -30,6 +30,20 @@
   /* Строка корзины: чуть отличный от фона блок, без жёсткого hex (светлая тема). */
   --rp-pos-cart-line-bg: color-mix(in srgb, var(--rp-card) 78%, var(--rp-secondary));
   --rp-pos-cart-line-border: color-mix(in srgb, var(--rp-border) 92%, var(--rp-foreground) 8%);
+  /** Метаданные строки (склад, тип цены): читаемый серый на белом. */
+  --rp-pos-cart-meta-fg: #6b7280;
+  /** Зачёркнутая «было» при скидке. */
+  --rp-pos-cart-price-struck: #9ca3af;
+  /** Фон «таблетки» ± количества. */
+  --rp-pos-cart-stepper-bg: color-mix(in srgb, var(--rp-secondary) 55%, var(--rp-border) 45%);
+
+  /** Активная строка корзины: тёмная карточка + зелёная линия слева. */
+  --rp-pos-cart-line-active-bg: #252b36;
+  --rp-pos-cart-line-active-fg: #f3f4f6;
+  --rp-pos-cart-line-active-muted: #9ca3af;
+  --rp-pos-cart-line-active-price-struck: #6b7280;
+  --rp-pos-cart-line-active-accent: #22c55e;
+  --rp-pos-cart-line-active-border: color-mix(in srgb, #252b36 65%, var(--rp-border) 35%);
 
   --rp-safe-inset-top: env(safe-area-inset-top, 0px);
   --rp-safe-inset-right: env(safe-area-inset-right, 0px);
@@ -63,6 +77,17 @@ body.body--dark {
 
   --rp-pos-cart-line-bg: color-mix(in srgb, var(--rp-secondary) 58%, var(--rp-muted) 42%);
   --rp-pos-cart-line-border: color-mix(in srgb, var(--rp-border) 88%, var(--rp-foreground) 12%);
+  /** Выраженный серый на чёрном фоне (мета и вторичный текст строки корзины). */
+  --rp-pos-cart-meta-fg: #c4cad4;
+  --rp-pos-cart-price-struck: #8b93a0;
+  --rp-pos-cart-stepper-bg: color-mix(in srgb, var(--rp-secondary) 62%, #ffffff 14%);
+
+  --rp-pos-cart-line-active-bg: color-mix(in srgb, #070707 42%, var(--rp-card) 58%);
+  --rp-pos-cart-line-active-fg: #f1f5f9;
+  --rp-pos-cart-line-active-muted: #a8b0bd;
+  --rp-pos-cart-line-active-price-struck: #7d8694;
+  --rp-pos-cart-line-active-accent: #4ade80;
+  --rp-pos-cart-line-active-border: color-mix(in srgb, var(--rp-border) 55%, #000 45%);
 
   /*
    * Quasar: --q-primary из sass остаётся тёмным; в dark синхронизируем с --rp-*.

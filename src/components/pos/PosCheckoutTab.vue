@@ -45,7 +45,7 @@
         </div>
 
         <q-card-section class="rp-pos-checkout-modal__body">
-          <PosCustomerBlock class="rp-pos-checkout-tab__customer" />
+          <PosCustomerBlock show-picker class="rp-pos-checkout-tab__customer" />
 
           <PosDiscountCouponFields
             v-model:discount-mode="discountMode"

@@ -1,0 +1,518 @@
+/** Блоки формы POS (строка товара, скидка/купон): те же классы, что в модалке «в корзину». */
+.lid-section-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+@media (max-width: 599px) {
+  .lid-section-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.lid-field--uom {
+  margin-top: 2px;
+  width: 100%;
+  min-width: 0;
+}
+
+.lid-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.lid-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.lid-field-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--rp-foreground);
+}
+
+.lid-helper-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.lid-helper-text {
+  font-size: 13px;
+  color: var(--rp-muted-foreground);
+  line-height: 1.45;
+}
+
+.lid-select-box {
+  min-height: 52px;
+  background: var(--rp-input);
+  border: 1px solid var(--rp-border);
+  border-radius: var(--rp-radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  color: var(--rp-foreground);
+}
+
+.lid-select-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 2px;
+}
+
+.lid-select-caption {
+  font-size: 12px;
+  color: var(--rp-muted-foreground);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lid-select-value {
+  font-size: 18px;
+  color: var(--rp-foreground);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lid-chevron {
+  flex-shrink: 0;
+  color: var(--rp-muted-foreground);
+}
+
+.lid-select {
+  min-width: 0;
+}
+
+.lid-select .q-field__control {
+  min-height: 52px;
+  padding: 14px 16px;
+  background: var(--rp-input);
+  border: 1px solid var(--rp-border);
+  border-radius: var(--rp-radius-md);
+  color: var(--rp-foreground);
+}
+
+.lid-select .q-field__native {
+  min-height: 0;
+  padding: 0;
+}
+
+.lid-select .q-field__marginal {
+  height: auto;
+  color: var(--rp-muted-foreground);
+}
+
+.lid-select .q-field__append {
+  padding-left: 8px;
+}
+
+.lid-input-box {
+  min-height: 52px;
+  background: var(--rp-input);
+  border: 1px solid var(--rp-border);
+  border-radius: var(--rp-radius-md);
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+}
+
+.lid-input-box--price {
+  min-height: 56px;
+}
+
+/* Quasar dense: фиксированная height: 40px + отступы у native — текст «прилипает» к верху */
+.lid-price-input .q-field,
+.lid-discount-value-field .q-field,
+.lid-stepper-center .q-field {
+  padding: 0;
+}
+
+.lid-price-input {
+  width: 100%;
+  align-self: stretch;
+}
+
+.lid-price-input .q-field__control,
+.lid-discount-value-field .q-field__control,
+.lid-stepper-center .q-field__control {
+  min-height: 52px;
+  height: auto !important;
+  align-items: center;
+}
+
+.lid-price-input .q-field__control-container,
+.lid-discount-value-field .q-field__control-container,
+.lid-stepper-center .q-field__control-container {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  display: flex;
+  align-items: center;
+}
+
+.lid-price-input .q-field__native,
+.lid-discount-value-field .q-field__native,
+.lid-stepper-center .q-field__native {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  min-height: 0 !important;
+  line-height: 1.25;
+  display: flex;
+  align-items: center;
+}
+
+.lid-price-input input {
+  font-size: 24px;
+  font-weight: 500;
+  color: var(--rp-foreground);
+  line-height: 1.25;
+  padding: 0;
+}
+
+.lid-discount-value-field input,
+.lid-stepper-center input {
+  line-height: 1.25;
+  padding: 0;
+}
+
+.lid-discount-box {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(120px, 1fr);
+  gap: 0;
+  border-radius: var(--rp-radius-md);
+  overflow: hidden;
+  border: 1px solid var(--rp-border);
+  background: var(--rp-input);
+}
+
+.lid-discount-toggle-group {
+  display: flex;
+  min-width: 0;
+  min-height: 52px;
+}
+
+.lid-discount-value-field {
+  min-width: 0;
+}
+
+.lid-discount-value-field .q-field__control {
+  padding: 0 16px;
+  color: var(--rp-foreground);
+}
+
+.lid-discount-value-field input {
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.lid-discount-tab {
+  flex: 1;
+  min-width: 0;
+  min-height: 52px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 600;
+  background: var(--rp-secondary);
+  color: var(--rp-secondary-foreground);
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.lid-discount-tab + .lid-discount-tab {
+  border-left: 1px solid var(--rp-border);
+}
+
+.lid-discount-tab--active {
+  background: var(--rp-primary);
+  color: var(--rp-primary-foreground);
+}
+
+.lid-discount-tab:focus-visible {
+  outline: 2px solid var(--rp-primary);
+  outline-offset: -2px;
+  z-index: 1;
+}
+
+.lid-qty-row {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) 52px;
+  gap: 12px;
+  align-items: center;
+}
+
+.lid-stepper-btn {
+  height: 52px;
+  margin: 0;
+  padding: 0;
+  border-radius: var(--rp-radius-md);
+  border: 1px solid var(--rp-border);
+  background: var(--rp-input);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  line-height: 1;
+  color: var(--rp-foreground);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.lid-stepper-btn:hover {
+  background: color-mix(in srgb, var(--rp-foreground) 6%, var(--rp-input));
+}
+
+.lid-stepper-btn:focus-visible {
+  outline: 2px solid var(--rp-primary);
+  outline-offset: 2px;
+}
+
+.lid-stepper-center {
+  min-height: 52px;
+  background: var(--rp-input);
+  border: 1px solid var(--rp-border);
+  border-radius: var(--rp-radius-md);
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+}
+
+.lid-stepper-center input {
+  text-align: center;
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.lid-summary-card {
+  background: var(--rp-secondary);
+  border-radius: var(--rp-radius-md);
+  padding: 16px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 480px) {
+  .lid-summary-card {
+    grid-template-columns: 1fr;
+  }
+}
+
+.lid-summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.lid-summary-label {
+  font-size: 12px;
+  color: var(--rp-muted-foreground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lid-summary-value {
+  font-size: 18px;
+  color: var(--rp-foreground);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (min-width: 821px) {
+  .lid-primary-btn {
+    min-height: 52px;
+    padding: 0 28px;
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: var(--rp-radius-md);
+  }
+
+  .lid-ghost-btn {
+    min-height: 44px;
+    font-size: 16px;
+    font-weight: 500;
+  }
+
+  .lid-select .q-field__control {
+    min-height: 60px;
+    padding: 10px 14px;
+  }
+
+  .lid-select-value {
+    font-size: 18px;
+    font-weight: 500;
+  }
+
+  .lid-input-box--price {
+    min-height: 60px;
+    padding: 0 14px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: stretch;
+  }
+
+  .lid-price-input .q-field__control,
+  .lid-discount-value-field .q-field__control,
+  .lid-stepper-center .q-field__control {
+    min-height: 60px;
+  }
+
+  .lid-discount-box {
+    min-height: 60px;
+  }
+
+  .lid-discount-toggle-group {
+    min-height: 60px;
+  }
+
+  .lid-discount-tab {
+    min-height: 60px;
+    font-size: 18px;
+    font-weight: 500;
+  }
+
+  .lid-qty-row {
+    grid-template-columns: 60px minmax(0, 1fr) 60px;
+    gap: 10px;
+  }
+
+  .lid-stepper-btn {
+    width: 60px;
+    height: 60px;
+  }
+
+  .lid-stepper-center {
+    min-height: 60px;
+  }
+
+  .lid-stepper-center input {
+    font-size: 18px;
+    font-weight: 500;
+  }
+
+  .lid-summary-card {
+    padding: 16px;
+    margin-top: 22px;
+    gap: 8px 12px;
+    background: var(--rp-input);
+  }
+
+  .lid-summary-label {
+    font-size: 12px;
+  }
+
+  .lid-summary-value {
+    font-size: 18px;
+  }
+}
+
+.lid-ghost-btn {
+  min-height: 48px;
+  padding: 0 18px;
+  border-radius: var(--rp-radius-md);
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--rp-foreground);
+}
+
+.lid-primary-btn {
+  min-height: 48px;
+  padding: 0 18px;
+  border-radius: var(--rp-radius-md);
+  font-size: 15px;
+  font-weight: 500;
+  background: var(--rp-primary) !important;
+  color: var(--rp-primary-foreground) !important;
+}
+
+.lid-touchpad {
+  width: 100%;
+}
+
+/* Купон: поле + «Применить» в одной линии */
+.lid-coupon-fused {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  width: 100%;
+  gap: 0;
+  border: 1px solid var(--rp-border);
+  border-radius: var(--rp-radius-md);
+  overflow: hidden;
+  background: var(--rp-input);
+}
+
+.lid-coupon-fused .lid-coupon-code {
+  flex: 1 1 0%;
+  min-width: 0;
+}
+
+.lid-coupon-fused .lid-coupon-code .q-field__control {
+  border: none !important;
+  border-radius: 0;
+  min-height: 52px;
+  box-shadow: none !important;
+}
+
+.lid-coupon-fused .lid-coupon-code .q-field__control:before,
+.lid-coupon-fused .lid-coupon-code .q-field__control:after {
+  border: none !important;
+}
+
+.lid-coupon-fused .lid-primary-btn {
+  border-radius: 0 var(--rp-radius-md) var(--rp-radius-md) 0;
+  margin: 0;
+  align-self: stretch;
+}
+
+.lid-coupon-locked {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--rp-border);
+  border-radius: var(--rp-radius-md);
+  background: var(--rp-input);
+}
+
+.lid-coupon-locked__icon {
+  flex-shrink: 0;
+  color: var(--rp-muted-foreground);
+}
+
+.lid-coupon-locked__code {
+  font-weight: 600;
+  color: var(--rp-foreground);
+  min-width: 0;
+}
+
+@media (min-width: 821px) {
+  .lid-coupon-fused .lid-coupon-code .q-field__control {
+    min-height: 60px;
+  }
+}

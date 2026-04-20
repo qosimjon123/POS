@@ -46,7 +46,6 @@
           aria-label="POS"
         >
           <div class="column no-wrap fit col">
-            <PosRightSidebar />
             <PosActionsGrid />
             <PosQuickIconRow />
             <q-separator />
@@ -72,7 +71,6 @@ import PosActionsGrid from 'src/components/pos/PosActionsGrid.vue';
 import PosPaymentBar from 'src/components/pos/PosPaymentBar.vue';
 import PosProductsPanel from 'src/components/pos/PosProductsPanel.vue';
 import PosQuickIconRow from 'src/components/pos/PosQuickIconRow.vue';
-import PosRightSidebar from 'src/components/pos/PosRightSidebar.vue';
 import { usePosDesktopLayoutStore } from 'src/stores/pos-desktop-layout';
 
 const $q = useQuasar();

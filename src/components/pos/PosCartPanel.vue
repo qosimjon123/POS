@@ -3,6 +3,16 @@
     class="rp-pos-cart column no-wrap"
     :class="{ 'rp-pos-cart--mobile-checkout': variant === 'mobileCheckout' }"
   >
+    <template v-if="variant !== 'mobileCheckout'">
+      <div class="rp-pos-cart__customer-bar row items-start justify-end no-wrap">
+        <div class="rp-pos-cart__customer-inner">
+          <PosCustomerPicker class="rp-pos-cart__customer-picker" @create="onCreateCustomer" />
+        </div>
+      </div>
+
+      <PosCustomerCreateDialog v-model="createDialogOpen" @saved="onCustomerSaved" />
+    </template>
+
     <div
       class="rp-pos-cart-list-wrap"
       :class="{ 'rp-pos-cart-list-wrap--has-lines': lines.length > 0 }"
@@ -61,7 +71,6 @@
               <div class="col min-w-0 column rp-pos-cart-line__body">
                 <div class="rp-pos-cart-line__head">
                   <span class="rp-pos-cart-line__title ellipsis">{{ line.title }}</span>
-                  <span class="rp-pos-cart-line__price">{{ line.price }}</span>
                 </div>
                 <div class="rp-pos-cart-line__details">
                   <div
@@ -77,11 +86,29 @@
                     {{ line.detailsMeta }}
                   </div>
                 </div>
+                <div class="rp-pos-cart-line__price-row row items-baseline no-wrap">
+                  <span
+                    v-if="line.hasDiscount"
+                    class="rp-pos-cart-line__price-original"
+                    aria-hidden="true"
+                  >
+                    {{ line.priceOriginal }}
+                  </span>
+                  <span class="rp-pos-cart-line__price-current">{{ line.priceCurrent }}</span>
+                </div>
               </div>
               <div
-                class="rp-pos-cart-line__actions column items-stretch no-wrap"
+                class="rp-pos-cart-line__actions column items-end justify-between no-wrap"
                 @click.stop
               >
+                <button
+                  type="button"
+                  class="rp-pos-cart-line__remove-btn row items-center justify-center"
+                  :aria-label="t('pos.removeLine')"
+                  @click="cartStore.removeLine(line.id)"
+                >
+                  <q-icon name="delete_outline" :size="removeIconSize" />
+                </button>
                 <div class="rp-pos-cart-line__stepper row items-center no-wrap">
                   <button
                     type="button"
@@ -101,14 +128,6 @@
                     +
                   </button>
                 </div>
-                <button
-                  type="button"
-                  class="rp-pos-cart-line__remove-btn row items-center justify-center"
-                  :aria-label="t('pos.removeLine')"
-                  @click="cartStore.removeLine(line.id)"
-                >
-                  <q-icon name="delete_outline" :size="removeIconSize" />
-                </button>
               </div>
             </div>
           </button>
@@ -173,11 +192,21 @@
 </template>
 
 <script setup lang="ts">
+import { Notify } from 'quasar';
 import { storeToRefs } from 'pinia';
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-import { cartLinePriceListCaption, usePosCartStore } from 'src/stores/pos-cart';
+import PosCustomerCreateDialog from 'src/components/pos/PosCustomerCreateDialog.vue';
+import PosCustomerPicker from 'src/components/pos/PosCustomerPicker.vue';
+import {
+  cartLineDiscountAbs,
+  cartLineGross,
+  cartLineNet,
+  cartLinePriceListCaption,
+  formatUsd,
+  usePosCartStore,
+} from 'src/stores/pos-cart';
 
 const props = withDefaults(
   defineProps<{
@@ -207,21 +236,28 @@ const cartStore = usePosCartStore();
 const { lines, totalsFormatted } = storeToRefs(cartStore);
 
 const activeIndex = ref(0);
+const createDialogOpen = ref(false);
 
 const thumbIconSize = computed(() => (props.variant === 'mobileCheckout' ? '18px' : '22px'));
 
 const removeIconSize = computed(() => (props.variant === 'mobileCheckout' ? '20px' : '22px'));
 
 const displayLines = computed(() =>
-  lines.value.map((line) => ({
-    id: line.id,
-    title: line.title,
-    imageUrl: line.imageUrl,
-    qty: line.qty,
-    price: cartStore.lineDisplayPrice(line),
-    detailsWarehouse: line.warehouseLabel,
-    detailsMeta: cartLinePriceListCaption(line),
-  })),
+  lines.value.map((line) => {
+    const discAbs = cartLineDiscountAbs(line);
+    const hasDiscount = discAbs > 0;
+    return {
+      id: line.id,
+      title: line.title,
+      imageUrl: line.imageUrl,
+      qty: line.qty,
+      priceCurrent: formatUsd(cartLineNet(line)),
+      priceOriginal: hasDiscount ? formatUsd(cartLineGross(line)) : '',
+      hasDiscount,
+      detailsWarehouse: line.warehouseLabel,
+      detailsMeta: cartLinePriceListCaption(line),
+    };
+  }),
 );
 
 const subtotalFmt = computed(() => totalsFormatted.value.subtotalFmt);
@@ -232,6 +268,18 @@ const totalFmt = computed(() => totalsFormatted.value.totalFmt);
 function onLineClick(idx: number, lineId: string): void {
   activeIndex.value = idx;
   cartStore.openCartLineDialog(lineId);
+}
+
+function onCreateCustomer(): void {
+  createDialogOpen.value = true;
+}
+
+function onCustomerSaved(): void {
+  Notify.create({
+    type: 'positive',
+    message: t('pos.customerSavedStub'),
+    timeout: 2000,
+  });
 }
 
 watch(
@@ -263,6 +311,27 @@ watch(
   box-sizing: border-box;
   container-type: inline-size;
   container-name: pos-cart;
+}
+
+.rp-pos-cart__customer-bar {
+  flex-shrink: 0;
+  width: 100%;
+  min-width: 0;
+  padding: 10px 12px 8px;
+  box-sizing: border-box;
+  border-bottom: 1px solid var(--rp-border);
+}
+
+.rp-pos-cart__customer-inner {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin-left: auto;
+}
+
+.rp-pos-cart__customer-picker {
+  width: 100%;
+  min-width: 0;
 }
 
 .rp-pos-cart-list-wrap {
@@ -375,7 +444,7 @@ watch(
   max-width: 100%;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: start;
+  align-items: stretch;
   gap: 12px;
 }
 
@@ -389,9 +458,9 @@ watch(
 .rp-pos-cart-line__thumb {
   width: 64px;
   flex-shrink: 0;
-  border-radius: var(--rp-radius-sm);
+  border-radius: var(--rp-radius-md);
   overflow: hidden;
-  align-self: flex-start;
+  align-self: center;
 }
 
 .rp-pos-cart-line__thumb--sm {
@@ -415,29 +484,31 @@ watch(
 
 .rp-pos-cart-line__actions {
   flex-shrink: 0;
-  align-self: flex-start;
-  gap: 8px;
+  align-self: stretch;
+  gap: 10px;
   min-width: 0;
+  min-height: 104px;
 }
 
 .rp-pos-cart-line__stepper {
   flex-shrink: 0;
-  gap: 6px;
-  padding: 6px 8px;
-  border-radius: var(--rp-radius-md);
-  background: color-mix(in srgb, var(--rp-input) 88%, var(--rp-border));
-  border: 1px solid var(--rp-border);
+  gap: 2px;
+  padding: 4px 6px;
+  border-radius: var(--rp-radius-full);
+  background: var(--rp-pos-cart-stepper-bg, color-mix(in srgb, var(--rp-input) 88%, var(--rp-border)));
+  border: 1px solid color-mix(in srgb, var(--rp-border) 85%, var(--rp-foreground) 15%);
 }
 
 .rp-pos-cart-line__remove-btn {
   flex-shrink: 0;
-  width: 100%;
+  width: 40px;
+  height: 40px;
   margin: 0;
   padding: 0;
-  min-height: 36px;
-  border: 1px solid color-mix(in srgb, var(--rp-negative) 45%, var(--rp-border));
-  border-radius: var(--rp-radius-md);
-  background: color-mix(in srgb, var(--rp-negative) 8%, var(--rp-card));
+  min-height: 0;
+  border: 1px solid color-mix(in srgb, var(--rp-negative) 38%, var(--rp-border));
+  border-radius: var(--rp-radius-sm);
+  background: color-mix(in srgb, var(--rp-negative) 14%, var(--rp-card));
   color: var(--rp-negative);
   cursor: pointer;
   transition:
@@ -447,8 +518,8 @@ watch(
 }
 
 .rp-pos-cart-line__remove-btn:hover {
-  background: color-mix(in srgb, var(--rp-negative) 16%, var(--rp-card));
-  border-color: color-mix(in srgb, var(--rp-negative) 55%, var(--rp-border));
+  background: color-mix(in srgb, var(--rp-negative) 22%, var(--rp-card));
+  border-color: color-mix(in srgb, var(--rp-negative) 52%, var(--rp-border));
 }
 
 .rp-pos-cart-line__remove-btn:focus-visible {
@@ -459,27 +530,24 @@ watch(
 .rp-pos-cart-line__step-btn {
   margin: 0;
   padding: 0;
-  min-width: 40px;
-  min-height: 40px;
-  border: 1px solid var(--rp-border);
+  min-width: 36px;
+  min-height: 36px;
+  border: none;
   border-radius: var(--rp-radius-sm);
-  background: var(--rp-card);
+  background: transparent;
   color: var(--rp-foreground);
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 700;
   line-height: 1;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition:
-    background 0.12s ease,
-    border-color 0.12s ease;
+  transition: background 0.12s ease;
 }
 
 .rp-pos-cart-line__step-btn:hover {
-  background: color-mix(in srgb, var(--rp-foreground) 7%, var(--rp-card));
-  border-color: color-mix(in srgb, var(--rp-foreground) 22%, var(--rp-border));
+  background: color-mix(in srgb, var(--rp-foreground) 9%, transparent);
 }
 
 .rp-pos-cart-line__step-btn:focus-visible {
@@ -499,73 +567,62 @@ watch(
 .rp-pos-cart-line--active {
   position: relative;
   z-index: 1;
-  border-color: color-mix(in srgb, var(--rp-primary-foreground) 18%, var(--rp-primary));
-  background: linear-gradient(
-    152deg,
-    color-mix(in srgb, var(--rp-primary) 100%, transparent) 0%,
-    color-mix(in srgb, var(--rp-primary) 82%, #000 18%) 100%
-  );
-  color: var(--rp-primary-foreground);
+  border-color: var(--rp-pos-cart-line-active-border, var(--rp-border));
+  background: var(--rp-pos-cart-line-active-bg, var(--rp-card));
+  color: var(--rp-pos-cart-line-active-fg, var(--rp-foreground));
   box-shadow:
-    0 8px 28px color-mix(in srgb, var(--rp-primary) 38%, transparent),
-    0 1px 0 color-mix(in srgb, var(--rp-primary-foreground) 14%, transparent) inset,
-    inset 3px 0 0 0 color-mix(in srgb, var(--rp-primary-foreground) 45%, transparent);
+    inset 4px 0 0 0 var(--rp-pos-cart-line-active-accent, var(--rp-success)),
+    0 6px 20px color-mix(in srgb, #000 22%, transparent);
 }
 
 .rp-pos-cart-line--active .rp-pos-cart-line__thumb {
   box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--rp-primary-foreground) 22%, transparent),
-    0 4px 12px color-mix(in srgb, #000 35%, transparent);
+    0 0 0 1px color-mix(in srgb, var(--rp-pos-cart-line-active-fg) 18%, transparent),
+    0 3px 10px color-mix(in srgb, #000 40%, transparent);
 }
 
 .rp-pos-cart-line--active .rp-pos-cart-line__title,
-.rp-pos-cart-line--active .rp-pos-cart-line__price,
+.rp-pos-cart-line--active .rp-pos-cart-line__price-current,
 .rp-pos-cart-line--active .rp-pos-cart-line__qty,
 .rp-pos-cart-line--active .rp-pos-cart-line__step-btn {
-  color: var(--rp-primary-foreground);
+  color: var(--rp-pos-cart-line-active-fg, var(--rp-foreground));
+}
+
+.rp-pos-cart-line--active .rp-pos-cart-line__price-original {
+  color: var(--rp-pos-cart-line-active-price-struck, var(--rp-muted-foreground));
 }
 
 .rp-pos-cart-line--active .rp-pos-cart-line__stepper {
-  background: color-mix(in srgb, var(--rp-primary-foreground) 12%, transparent);
-  border-color: color-mix(in srgb, var(--rp-primary-foreground) 26%, transparent);
-  backdrop-filter: blur(6px);
-}
-
-.rp-pos-cart-line--active .rp-pos-cart-line__step-btn {
-  background: color-mix(in srgb, var(--rp-primary-foreground) 16%, transparent);
-  border-color: color-mix(in srgb, var(--rp-primary-foreground) 30%, transparent);
+  background: color-mix(in srgb, #fff 9%, transparent);
+  border-color: color-mix(in srgb, #fff 14%, transparent);
 }
 
 .rp-pos-cart-line--active .rp-pos-cart-line__step-btn:hover {
-  background: color-mix(in srgb, var(--rp-primary-foreground) 26%, transparent);
-  border-color: color-mix(in srgb, var(--rp-primary-foreground) 44%, transparent);
+  background: color-mix(in srgb, #fff 16%, transparent);
 }
 
 .rp-pos-cart-line--active .rp-pos-cart-line__remove-btn {
-  background: color-mix(in srgb, var(--rp-negative) 22%, transparent);
-  border-color: color-mix(in srgb, var(--rp-negative) 55%, var(--rp-primary-foreground) 20%);
-  color: color-mix(in srgb, #fff 88%, var(--rp-negative));
+  background: color-mix(in srgb, var(--rp-negative) 28%, transparent);
+  border-color: color-mix(in srgb, var(--rp-negative) 48%, transparent);
+  color: color-mix(in srgb, #fff 90%, var(--rp-negative));
 }
 
 .rp-pos-cart-line--active .rp-pos-cart-line__remove-btn:hover {
-  background: color-mix(in srgb, var(--rp-negative) 34%, transparent);
-  border-color: color-mix(in srgb, var(--rp-negative) 68%, var(--rp-primary-foreground) 12%);
+  background: color-mix(in srgb, var(--rp-negative) 40%, transparent);
+  border-color: color-mix(in srgb, var(--rp-negative) 62%, transparent);
 }
 
 .rp-pos-cart-line--active .rp-pos-cart-line__remove-btn:focus-visible {
-  outline-color: var(--rp-primary-foreground);
+  outline-color: var(--rp-pos-cart-line-active-accent, var(--rp-success));
 }
 
-.rp-pos-cart-line--active .rp-pos-cart-line__warehouse-value {
-  color: color-mix(in srgb, var(--rp-primary-foreground) 76%, transparent);
-}
-
+.rp-pos-cart-line--active .rp-pos-cart-line__warehouse-value,
 .rp-pos-cart-line--active .rp-pos-cart-line__details-line {
-  color: color-mix(in srgb, var(--rp-primary-foreground) 72%, transparent);
+  color: var(--rp-pos-cart-line-active-muted, var(--rp-muted-foreground));
 }
 
 .rp-pos-cart-line--active .rp-pos-cart-line__thumb-icon {
-  color: color-mix(in srgb, var(--rp-primary-foreground) 58%, transparent);
+  color: color-mix(in srgb, var(--rp-pos-cart-line-active-fg) 55%, transparent);
 }
 
 .rp-pos-cart-line__head {
@@ -573,7 +630,7 @@ watch(
   flex-direction: column;
   align-items: stretch;
   flex-shrink: 0;
-  gap: 4px;
+  gap: 0;
   width: 100%;
   min-width: 0;
 }
@@ -588,26 +645,12 @@ watch(
   text-align: left;
 }
 
-.rp-pos-cart-line__price {
-  font-weight: 800;
-  font-size: 17px;
-  line-height: 1.3;
-  min-width: 0;
-  width: 100%;
-  color: var(--rp-foreground);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.01em;
-  text-align: left;
-  word-break: break-word;
-  overflow-wrap: anywhere;
-}
-
 .rp-pos-cart-line__details {
   flex-shrink: 0;
-  margin-top: 8px;
+  margin-top: 6px;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 4px;
   text-align: left;
 }
 
@@ -617,13 +660,39 @@ watch(
   font-size: 12px;
   font-weight: 400;
   line-height: 1.35;
-  color: var(--rp-muted-foreground);
+  color: var(--rp-pos-cart-meta-fg, var(--rp-muted-foreground));
 }
 
 .rp-pos-cart-line__details-line {
-  font-size: 14px;
+  font-size: 13px;
   line-height: 1.4;
-  color: var(--rp-muted-foreground);
+  color: var(--rp-pos-cart-meta-fg, var(--rp-muted-foreground));
+}
+
+.rp-pos-cart-line__price-row {
+  margin-top: 10px;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.rp-pos-cart-line__price-original {
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-decoration: line-through;
+  color: var(--rp-pos-cart-price-struck, var(--rp-muted-foreground));
+}
+
+.rp-pos-cart-line__price-current {
+  font-weight: 800;
+  font-size: 17px;
+  line-height: 1.2;
+  color: var(--rp-foreground);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .rp-pos-cart-summary {
@@ -688,7 +757,7 @@ watch(
 /* Узкая колонка корзины (десктоп): меньше типографика, чтобы строка умещалась. */
 @container pos-cart (max-width: 360px) {
   .rp-pos-cart-line__title,
-  .rp-pos-cart-line__price {
+  .rp-pos-cart-line__price-current {
     font-size: 15px;
   }
 
@@ -725,7 +794,7 @@ watch(
 
 @container pos-cart (max-width: 280px) {
   .rp-pos-cart-line__title,
-  .rp-pos-cart-line__price {
+  .rp-pos-cart-line__price-current {
     font-size: 14px;
   }
 
@@ -822,7 +891,7 @@ watch(
 }
 
 .rp-pos-cart--mobile-checkout .rp-pos-cart-line__title,
-.rp-pos-cart--mobile-checkout .rp-pos-cart-line__price {
+.rp-pos-cart--mobile-checkout .rp-pos-cart-line__price-current {
   font-size: 16px;
 }
 
@@ -865,7 +934,7 @@ watch(
 /* Узкий viewport: ещё компактнее (правила ниже mobile-checkout, перекрывают 16px). */
 @media (max-width: 420px) {
   .rp-pos-cart-line__title,
-  .rp-pos-cart-line__price {
+  .rp-pos-cart-line__price-current {
     font-size: 14px;
   }
 
@@ -892,7 +961,7 @@ watch(
   }
 
   .rp-pos-cart--mobile-checkout .rp-pos-cart-line__title,
-  .rp-pos-cart--mobile-checkout .rp-pos-cart-line__price {
+  .rp-pos-cart--mobile-checkout .rp-pos-cart-line__price-current {
     font-size: 14px;
   }
 

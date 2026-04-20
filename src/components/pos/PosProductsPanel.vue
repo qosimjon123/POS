@@ -61,6 +61,18 @@
                 class="rp-pos-product-media__fallback-icon"
               />
             </div>
+            <div
+              class="rp-pos-product-stock"
+              :class="{
+                'rp-pos-product-stock--critical': p.stockLevel === 'critical',
+                'rp-pos-product-stock--low': p.stockLevel === 'low',
+                'rp-pos-product-stock--ok': p.stockLevel === 'ok',
+              }"
+              :aria-label="`${t('pos.stockOnHand')}: ${p.stockText}`"
+            >
+              <q-icon :name="p.stockIcon" size="14px" aria-hidden="true" />
+              <span>{{ p.stockText }}</span>
+            </div>
             <template v-if="p.inCartQty > 0">
               <div
                 class="rp-pos-product-media__dim"
@@ -94,7 +106,12 @@
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-import { formatUsd, usePosCartStore } from 'src/stores/pos-cart';
+import {
+  formatProductStockQtyDisplay,
+  formatUsd,
+  productStockLevel,
+  usePosCartStore,
+} from 'src/stores/pos-cart';
 
 const { t } = useI18n();
 const cartStore = usePosCartStore();
@@ -112,14 +129,21 @@ const categories = computed(() => [
 
 const products = computed(() => {
   const qty = cartStore.qtyByProductId;
-  return cartStore.catalog.map((p) => ({
-    id: p.id,
-    title: p.title,
-    price: formatUsd(p.retailRate),
-    imageUrl: p.imageUrl,
-    inCartQty: qty[p.id] ?? 0,
-    badge: p.badgeKey ? t(`pos.${p.badgeKey}`) : undefined,
-  }));
+  return cartStore.catalog.map((p) => {
+    const stockLevel = productStockLevel(p.stockQty);
+    const stockText = `${formatProductStockQtyDisplay(p.stockQty)}\u00A0${t('pos.stockUom')}`;
+    return {
+      id: p.id,
+      title: p.title,
+      price: formatUsd(p.retailRate),
+      imageUrl: p.imageUrl,
+      inCartQty: qty[p.id] ?? 0,
+      badge: p.badgeKey ? t(`pos.${p.badgeKey}`) : undefined,
+      stockLevel,
+      stockText,
+      stockIcon: stockLevel === 'critical' ? 'error' : 'inventory_2',
+    };
+  });
 });
 </script>
 
@@ -322,6 +346,46 @@ body.body--dark .rp-pos-product-card:hover {
 .rp-pos-product-media__fallback-icon {
   opacity: 0.45;
   color: var(--rp-muted-foreground);
+}
+
+.rp-pos-product-stock {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  z-index: 6;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: calc(100% - 56px);
+  padding: 4px 8px;
+  border-radius: var(--rp-radius-sm);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+  border: 1px solid var(--rp-product-stock-edge);
+  background: var(--rp-product-stock-bg);
+  color: var(--rp-product-stock-fg);
+  box-sizing: border-box;
+}
+
+.rp-pos-product-stock--ok {
+  --rp-product-stock-edge: #22c55e;
+  --rp-product-stock-fg: #4ade80;
+  --rp-product-stock-bg: color-mix(in srgb, #0f172a 88%, #22c55e 12%);
+}
+
+.rp-pos-product-stock--low {
+  --rp-product-stock-edge: #f59e0b;
+  --rp-product-stock-fg: #fbbf24;
+  --rp-product-stock-bg: color-mix(in srgb, #0f172a 88%, #f59e0b 12%);
+}
+
+.rp-pos-product-stock--critical {
+  --rp-product-stock-edge: #f87171;
+  --rp-product-stock-fg: #fca5a5;
+  --rp-product-stock-bg: color-mix(in srgb, #0f172a 88%, #f87171 12%);
 }
 
 .rp-pos-product-media__dim {

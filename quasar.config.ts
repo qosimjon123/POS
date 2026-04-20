@@ -3,6 +3,7 @@
 
 import { defineConfig } from '#q-app/wrappers';
 import { fileURLToPath } from 'node:url';
+import vueDevTools from 'vite-plugin-vue-devtools';
 
 export default defineConfig((ctx) => {
   return {
@@ -60,7 +61,11 @@ export default defineConfig((ctx) => {
       // polyfillModulePreload: true,
       // distDir
 
-      // extendViteConf (viteConf) {},
+      extendViteConf(viteConf) {
+        if (ctx.dev) {
+          viteConf.plugins = [vueDevTools(), ...(viteConf.plugins ?? [])];
+        }
+      },
       // viteVuePluginOptions: {},
 
       vitePlugins: [

@@ -1,76 +1,54 @@
 <template>
-  <div class="rp-pos-discount-coupon-fields">
-    <div
-      class="text-subtitle2 q-mb-sm"
-      :class="{ 'q-mt-lg': layout === 'checkout' }"
-    >
-      {{ t('pos.discounts') }}
-    </div>
-    <div
-      ref="discountPadZoneRef"
-      class="rp-pos-discount-coupon-fields__discount-zone"
-    >
+  <div
+    class="rp-pos-discount-coupon-fields"
+    :class="{ 'rp-pos-discount-coupon-fields--dialog': layout === 'dialog' }"
+  >
+    <div class="rp-pos-discount-coupon-fields__discount-stack">
       <div
-        class="row no-wrap items-stretch rp-pos-discount-coupon-fields__discount-line"
-        role="group"
-        :aria-label="t('pos.discounts')"
+        class="text-subtitle2 rp-pos-discount-coupon-fields__section-title q-mb-sm"
+        :class="{ 'q-mt-lg': layout === 'checkout' }"
       >
-        <q-input
+        {{ t('pos.discounts') }}
+      </div>
+      <div
+        ref="discountPadZoneRef"
+        class="rp-pos-discount-coupon-fields__discount-zone"
+      >
+        <RpPosDiscountLine
           v-model="discountValue"
-          class="col rp-pos-discount-coupon-fields__field rp-pos-discount-coupon-fields__discount-input"
-          dense
-          outlined
-          type="number"
-          :suffix="discountMode === 'percent' ? '%' : undefined"
-          :prefix="discountMode === 'fixed' ? '$' : undefined"
-          :placeholder="t('pos.discountValuePlaceholder')"
+          v-model:mode="discountMode"
+          :variant="layout === 'dialog' ? 'desktop' : 'compact'"
           @focus="onDiscountFocus"
           @blur="onDiscountBlur"
         />
-        <div class="rp-pos-discount-coupon-fields__icon-toggle">
-          <q-btn
-            flat
-            dense
-            :ripple="false"
-            icon="percent"
-            class="rp-pos-discount-coupon-fields__icon-toggle-btn"
-            :class="{
-              'rp-pos-discount-coupon-fields__icon-toggle-btn--active':
-                discountMode === 'percent',
-            }"
-            @click="discountMode = 'percent'"
-          >
-            <q-tooltip>{{ t('pos.discountModePercent') }}</q-tooltip>
-          </q-btn>
-          <q-btn
-            flat
-            dense
-            :ripple="false"
-            icon="monetization_on"
-            class="rp-pos-discount-coupon-fields__icon-toggle-btn"
-            :class="{
-              'rp-pos-discount-coupon-fields__icon-toggle-btn--active':
-                discountMode === 'fixed',
-            }"
-            @click="discountMode = 'fixed'"
-          >
-            <q-tooltip>{{ t('pos.discountModeFixed') }}</q-tooltip>
-          </q-btn>
-        </div>
-      </div>
 
-      <RpNumericTouchpad
-        v-show="discountPadOpen"
-        v-model="discountValue"
-        class="rp-pos-discount-coupon-fields__discount-pad q-mt-sm"
-        :size="discountTouchpadSize"
-        shape="rounded"
-        :max-length="discountMaxDigits"
-        :aria-label="t('pos.discounts')"
-      />
+      <div
+        class="rp-pos-discount-coupon-fields__pad-shell"
+        :class="{
+          'rp-pos-discount-coupon-fields__pad-shell--dialog': layout === 'dialog',
+          'q-mt-sm': layout !== 'dialog',
+        }"
+      >
+        <RpNumericTouchpad
+          v-show="showDiscountPad"
+          v-model="discountValue"
+          class="rp-pos-discount-coupon-fields__discount-pad"
+          :fill-height="layout === 'dialog'"
+          :size="discountTouchpadSize"
+          shape="rounded"
+          v-bind="dialogTouchpadBind"
+          :allow-decimal="discountMode === 'fixed'"
+          :max-length="discountMaxDigits"
+          :aria-label="t('pos.discounts')"
+        />
+      </div>
+      </div>
     </div>
 
-    <div class="rp-pos-discount-coupon-fields__coupon-block q-mt-lg">
+    <div
+      class="rp-pos-discount-coupon-fields__coupon-block"
+      :class="{ 'q-mt-lg': layout === 'checkout' }"
+    >
       <div
         v-if="couponLocked"
         class="rp-pos-discount-coupon-fields__coupon-locked row items-center no-wrap"
@@ -159,6 +137,7 @@ import { useQuasar } from 'quasar';
 import { useI18n } from 'vue-i18n';
 
 import RpNumericTouchpad from 'src/components/common/RpNumericTouchpad.vue';
+import RpPosDiscountLine from 'src/components/pos/RpPosDiscountLine.vue';
 import { useRpKeyboard } from 'src/components/common/keyboard-inject';
 
 const props = withDefaults(
@@ -174,6 +153,18 @@ const discountTouchpadSize = computed(() =>
   props.layout === 'dialog' ? 'lg' : 'sm',
 );
 
+/** В диалоге — плотнее сетка и заполнение высоты; в чекауте пресеты `size`. */
+const dialogTouchpadBind = computed(() => {
+  if (props.layout !== 'dialog') return {};
+  return {
+    gap: '6px',
+    keyMinHeight: '48px',
+    fontSize: 'clamp(20px, 2.5vmin, 28px)',
+    keyRadius: '12px',
+    backspaceIconSize: '24px',
+  };
+});
+
 const discountMode = defineModel<'percent' | 'fixed'>('discountMode', {
   default: 'percent',
 });
@@ -186,6 +177,10 @@ const kbd = useRpKeyboard();
 
 const discountPadZoneRef = ref<HTMLElement | null>(null);
 const discountPadOpen = ref(false);
+
+const showDiscountPad = computed(
+  () => props.layout === 'dialog' || discountPadOpen.value,
+);
 
 /** Процент: до 3 цифр (100), сумма: запас под крупные значения. */
 const discountMaxDigits = computed(() =>
@@ -276,57 +271,6 @@ function onApplyCoupon() {
 </script>
 
 <style scoped lang="scss">
-.rp-pos-discount-coupon-fields__discount-line {
-  gap: 0;
-  margin-top: 0;
-}
-
-/* Одна линия: поле без скругления справа, тоггл без скругления слева */
-.rp-pos-discount-coupon-fields__discount-input {
-  min-width: 0;
-}
-
-.rp-pos-discount-coupon-fields__discount-input :deep(.q-field__control) {
-  border-radius: var(--rp-radius-md) 0 0 var(--rp-radius-md);
-}
-
-.rp-pos-discount-coupon-fields__icon-toggle {
-  display: flex;
-  flex-direction: row;
-  flex-shrink: 0;
-  align-self: stretch;
-  border: 1px solid var(--rp-border);
-  border-left-width: 0;
-  border-radius: 0 var(--rp-radius-md) var(--rp-radius-md) 0;
-  background: var(--rp-input);
-  overflow: hidden;
-}
-
-.rp-pos-discount-coupon-fields__icon-toggle-btn {
-  min-width: 44px;
-  height: 100%;
-  min-height: 0;
-  padding: 0 10px;
-  border-radius: 0;
-  color: var(--rp-foreground);
-  opacity: 0.72;
-}
-
-.rp-pos-discount-coupon-fields__icon-toggle-btn :deep(.q-icon) {
-  font-size: 22px;
-}
-
-.rp-pos-discount-coupon-fields__icon-toggle-btn--active {
-  opacity: 1;
-  background: var(--rp-primary);
-  color: var(--rp-primary-foreground);
-}
-
-.rp-pos-discount-coupon-fields__icon-toggle-btn:focus-visible {
-  outline: 2px solid var(--rp-primary);
-  outline-offset: -2px;
-}
-
 .rp-pos-discount-coupon-fields__field {
   min-width: 0;
 }
@@ -438,5 +382,80 @@ function onApplyCoupon() {
 .rp-pos-discount-coupon-fields__unlock-btn {
   flex-shrink: 0;
   color: var(--rp-muted-foreground);
+}
+
+/* Диалог: широкая сетка, две колонки на широком экране, крупнее поля и нумпад */
+.rp-pos-discount-coupon-fields--dialog {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .rp-pos-discount-coupon-fields--dialog {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    gap: 24px 32px;
+    align-items: stretch;
+  }
+}
+
+.rp-pos-discount-coupon-fields--dialog .rp-pos-discount-coupon-fields__section-title {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.rp-pos-discount-coupon-fields--dialog .rp-pos-discount-coupon-fields__discount-stack {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.rp-pos-discount-coupon-fields--dialog .rp-pos-discount-coupon-fields__pad-shell--dialog {
+  flex: 1 1 auto;
+  min-height: min(300px, 42vh);
+  display: flex;
+  flex-direction: column;
+  margin-top: 14px;
+}
+
+.rp-pos-discount-coupon-fields--dialog .rp-pos-discount-coupon-fields__discount-pad {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+}
+
+.rp-pos-discount-coupon-fields--dialog .rp-pos-discount-coupon-fields__coupon-block {
+  padding: 16px 18px;
+  border: 1px solid var(--rp-border);
+  border-radius: var(--rp-radius-md);
+  background: color-mix(in srgb, var(--rp-input) 72%, var(--rp-card));
+  min-width: 0;
+}
+
+.rp-pos-discount-coupon-fields--dialog .rp-pos-discount-coupon-fields__coupon-expand {
+  min-height: 52px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.rp-pos-discount-coupon-fields--dialog .rp-pos-discount-coupon-fields__coupon-fused :deep(.q-field__control) {
+  min-height: 50px;
+}
+
+.rp-pos-discount-coupon-fields--dialog .rp-pos-discount-coupon-fields__coupon-fused :deep(input) {
+  font-size: 1rem;
+}
+
+.rp-pos-discount-coupon-fields--dialog .rp-pos-discount-coupon-fields__apply {
+  padding: 0 18px;
+  font-size: 15px;
+}
+
+.rp-pos-discount-coupon-fields--dialog .rp-pos-discount-coupon-fields__coupon-locked {
+  padding: 12px 14px;
+  border: none;
+  background: var(--rp-input);
 }
 </style>

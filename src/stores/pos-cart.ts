@@ -19,8 +19,29 @@ export interface CatalogProduct {
   /** Оптовая цена по прайсу. */
   wholesaleRate: number;
   uoms: string[];
+  /** Остаток на складе (для индикатора в каталоге). */
+  stockQty: number;
   imageUrl?: string;
   badgeKey?: 'popular' | 'promo' | 'vip' | 'newBadge' | 'hot' | 'fast' | 'quick' | 'sale';
+}
+
+/** Уровень остатка: &lt;5 критично, 5–10 низкий, &gt;10 норма. */
+export type ProductStockLevel = 'critical' | 'low' | 'ok';
+
+export function productStockLevel(qty: number): ProductStockLevel {
+  const q = Math.floor(Number(qty));
+  if (!Number.isFinite(q) || q < 0) return 'critical';
+  if (q < 5) return 'critical';
+  if (q <= 10) return 'low';
+  return 'ok';
+}
+
+/** Для отображения: при остатке &gt; 99 показываем «99+». */
+export function formatProductStockQtyDisplay(qty: number): string {
+  const q = Math.floor(Number(qty));
+  if (!Number.isFinite(q) || q < 0) return '0';
+  if (q > 99) return '99+';
+  return String(q);
 }
 
 export interface CartLine {
@@ -79,6 +100,25 @@ export function cartLinePriceListCaption(line: CartLine): string {
   return `${priceListLabel}${disc}`;
 }
 
+/** Сумма по строке до скидки (qty × rate). */
+export function cartLineGross(line: CartLine): number {
+  return roundMoney(line.qty * line.rate);
+}
+
+/** Абсолют скидки по строке. */
+export function cartLineDiscountAbs(line: CartLine): number {
+  if (line.discountMode === 'fixed') {
+    const gross = cartLineGross(line);
+    return roundMoney(Math.min(Math.max(0, line.discountFixed), gross));
+  }
+  return roundMoney(cartLineGross(line) * (line.discountPercent / 100));
+}
+
+/** Итог по строке после скидки. */
+export function cartLineNet(line: CartLine): number {
+  return roundMoney(cartLineGross(line) - cartLineDiscountAbs(line));
+}
+
 function wholesaleFromRetail(retail: number): number {
   return roundMoney(retail * 0.85);
 }
@@ -99,6 +139,7 @@ export const usePosCartStore = defineStore('posCart', () => {
       retailRate: 66.49,
       wholesaleRate: wholesaleFromRetail(66.49),
       uoms: ['шт', 'упак'],
+      stockQty: 12,
       imageUrl: 'https://picsum.photos/seed/rprest1/480/480',
       badgeKey: 'popular',
     },
@@ -108,6 +149,7 @@ export const usePosCartStore = defineStore('posCart', () => {
       retailRate: 85.5,
       wholesaleRate: wholesaleFromRetail(85.5),
       uoms: ['шт'],
+      stockQty: 5,
       imageUrl: 'https://picsum.photos/seed/rprest2/480/480',
       badgeKey: 'promo',
     },
@@ -117,6 +159,7 @@ export const usePosCartStore = defineStore('posCart', () => {
       retailRate: 190,
       wholesaleRate: wholesaleFromRetail(190),
       uoms: ['пара', 'шт'],
+      stockQty: 2,
       imageUrl: 'https://picsum.photos/seed/rprest3/480/480',
       badgeKey: 'vip',
     },
@@ -126,6 +169,7 @@ export const usePosCartStore = defineStore('posCart', () => {
       retailRate: 120,
       wholesaleRate: wholesaleFromRetail(120),
       uoms: ['шт'],
+      stockQty: 105,
       imageUrl: 'https://picsum.photos/seed/rprest4/480/480',
       badgeKey: 'newBadge',
     },
@@ -135,6 +179,7 @@ export const usePosCartStore = defineStore('posCart', () => {
       retailRate: 28,
       wholesaleRate: wholesaleFromRetail(28),
       uoms: ['шт'],
+      stockQty: 8,
       imageUrl: 'https://picsum.photos/seed/rprest5/480/480',
       badgeKey: 'hot',
     },
@@ -144,6 +189,7 @@ export const usePosCartStore = defineStore('posCart', () => {
       retailRate: 74,
       wholesaleRate: wholesaleFromRetail(74),
       uoms: ['пара', 'шт'],
+      stockQty: 48,
       imageUrl: 'https://picsum.photos/seed/rprest6/480/480',
       badgeKey: 'fast',
     },
@@ -153,6 +199,7 @@ export const usePosCartStore = defineStore('posCart', () => {
       retailRate: 25,
       wholesaleRate: wholesaleFromRetail(25),
       uoms: ['шт'],
+      stockQty: 3,
       imageUrl: 'https://picsum.photos/seed/rprest7/480/480',
       badgeKey: 'quick',
     },
@@ -162,6 +209,7 @@ export const usePosCartStore = defineStore('posCart', () => {
       retailRate: 52,
       wholesaleRate: wholesaleFromRetail(52),
       uoms: ['шт'],
+      stockQty: 15,
       imageUrl: 'https://picsum.photos/seed/rprest8/480/480',
       badgeKey: 'sale',
     },
@@ -326,28 +374,12 @@ export const usePosCartStore = defineStore('posCart', () => {
     lines.value = [];
   }
 
-  function lineGross(line: CartLine): number {
-    return roundMoney(line.qty * line.rate);
-  }
-
-  function lineDiscountAbs(line: CartLine): number {
-    if (line.discountMode === 'fixed') {
-      const gross = lineGross(line);
-      return roundMoney(Math.min(Math.max(0, line.discountFixed), gross));
-    }
-    return roundMoney(lineGross(line) * (line.discountPercent / 100));
-  }
-
-  function lineNet(line: CartLine): number {
-    return roundMoney(lineGross(line) - lineDiscountAbs(line));
-  }
-
   const subtotalGross = computed(() =>
-    roundMoney(lines.value.reduce((s, l) => s + lineGross(l), 0)),
+    roundMoney(lines.value.reduce((s, l) => s + cartLineGross(l), 0)),
   );
 
   const discountAbs = computed(() =>
-    roundMoney(lines.value.reduce((s, l) => s + lineDiscountAbs(l), 0)),
+    roundMoney(lines.value.reduce((s, l) => s + cartLineDiscountAbs(l), 0)),
   );
 
   const subtotalNet = computed(() => roundMoney(subtotalGross.value - discountAbs.value));
@@ -367,7 +399,7 @@ export const usePosCartStore = defineStore('posCart', () => {
   }));
 
   function lineDisplayPrice(line: CartLine): string {
-    return formatUsd(lineNet(line));
+    return formatUsd(cartLineNet(line));
   }
 
   function lineDisplayDetails(line: CartLine): string {

@@ -207,6 +207,8 @@ export default {
     cartEmpty: 'Сабад холӣ аст',
     cartEmptyHint: 'Аз каталог мол илова кунед',
     catalogExpandLine: 'Параметрҳои сатр (анбор, нарх, тахфиф)',
+    stockOnHand: 'Боқимонда',
+    stockUom: 'адад',
     catalogQuickAdd: 'Ба сабад илова кардан',
     proceedToCheckout: 'Ба пардохт',
     selectClient: 'Мизоҷ',
@@ -239,9 +241,8 @@ export default {
     lineItemEyebrowCatalog: 'Илова ба сабад',
     lineItemEyebrowCart: 'Таҳрири сатр',
     lineItemDescCatalog:
-      'Анбор, формати фурӯш ва шартҳоро интихоб кунед. Ҳама дар як экран барои суръат.',
-    lineItemDescCart:
-      'Анбори сатр ин ҷо тағйир намекунад. Нарх, тахфиф, шумора ё воҳидро нав кунед.',
+      'Намуди нарх, нарх, тахфиф ва шумораро нишон диҳед. Анбор пешфарз; воҳидро аз рӯйхат интихоб кунед.',
+    lineItemDescCart: 'Анбори сатр ин ҷо тағйир намекунад.',
     warehouseShipping: 'Анбори интиқол',
     warehouseFieldCaption: 'Барои ин мавқеъ дастрас',
     uomFieldCaption: 'Фурӯши пешфарз',

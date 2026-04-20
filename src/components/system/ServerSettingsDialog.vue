@@ -9,6 +9,8 @@
         <q-input
           v-model="settingsDraftUrl"
           outlined
+          stack-label
+          hide-hint
           class="rp-server-field"
           color="primary"
           :dark="$q.dark.isActive"
@@ -86,9 +88,9 @@ const dialogVisible = computed({
   color: var(--rp-muted-foreground);
 }
 
+/* stack-label: float всегда true — цвет акцента только при фокусе */
 .rp-server-field :deep(.q-field--focused .q-field__label),
-.rp-server-field :deep(.q-field--highlighted .q-field__label),
-.rp-server-field :deep(.q-field--float .q-field__label) {
+.rp-server-field :deep(.q-field--highlighted .q-field__label) {
   color: var(--rp-primary);
 }
 

@@ -5,6 +5,7 @@
       `rp-num-touchpad--size-${size}`,
       `rp-num-touchpad--shape-${shape}`,
       { 'rp-num-touchpad--disabled': disabled },
+      { 'rp-num-touchpad--fill-height': fillHeight },
     ]"
     :style="rootStyle"
     role="group"
@@ -124,6 +125,8 @@ const props = withDefaults(
     keyRadius?: string;
     backspaceIconSize?: string;
     ariaLabel?: string;
+    /** Растянуть клавиши на всю высоту родителя (равномерные ряды, без пустоты снизу). */
+    fillHeight?: boolean;
   }>(),
   {
     disabled: false,
@@ -135,6 +138,7 @@ const props = withDefaults(
     size: 'md',
     shape: 'circle',
     ariaLabel: 'Numeric keypad',
+    fillHeight: false,
   },
 );
 
@@ -451,5 +455,36 @@ body.body--dark .rp-num-touchpad__key--action:hover:not(:disabled) {
 .rp-num-touchpad--shape-rounded .rp-num-touchpad__key--spacer {
   min-height: var(--rp-touchpad-key-min-h);
   border-radius: var(--rp-touchpad-key-radius);
+}
+
+/* Родитель с ограниченной высотой (flex:1 + min-height:0): клавиши заполняют область */
+.rp-num-touchpad--fill-height {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: 100%;
+}
+
+.rp-num-touchpad--fill-height .rp-num-touchpad__main {
+  flex: 3 1 0%;
+  min-height: 0;
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+  align-content: stretch;
+  justify-items: stretch;
+}
+
+.rp-num-touchpad--fill-height .rp-num-touchpad__bottom {
+  flex: 1 1 0%;
+  min-height: 0;
+  grid-template-rows: minmax(0, 1fr);
+  align-content: stretch;
+  justify-items: stretch;
+}
+
+.rp-num-touchpad--fill-height.rp-num-touchpad--shape-rounded .rp-num-touchpad__key--digit,
+.rp-num-touchpad--fill-height.rp-num-touchpad--shape-rounded .rp-num-touchpad__key--action,
+.rp-num-touchpad--fill-height.rp-num-touchpad--shape-rounded .rp-num-touchpad__key--spacer {
+  min-height: 0;
+  height: 100%;
+  align-self: stretch;
 }
 </style>

@@ -26,64 +26,6 @@
         <div class="lid-sheet-grabber" />
       </div>
       <div class="lid-dialog-main">
-        <div v-if="!isLineDialogCompact" class="lid-image-rail">
-          <div class="lid-image-panel">
-            <div class="lid-product-image-frame">
-              <q-img
-                class="lid-product-image rounded-borders"
-                :src="imageSrc"
-                fit="cover"
-                spinner-color="primary"
-                :ratio="3 / 4"
-              >
-                <template #error>
-                  <div
-                    class="lid-product-image lid-product-image--fallback row items-center justify-center"
-                    aria-hidden="true"
-                  >
-                    <q-icon name="image_not_supported" size="56px" color="grey-6" />
-                  </div>
-                </template>
-              </q-img>
-            </div>
-          </div>
-
-          <div class="lid-desktop-keypad">
-            <div class="lid-desktop-keypad-inner">
-              <div class="lid-desktop-keypad-label">{{ t('pos.numericKeypadHint') }}</div>
-              <div class="lid-desktop-field-tabs" role="tablist" :aria-label="t('pos.numericKeypadHint')">
-                <button
-                  v-for="tab in desktopNumericTabs"
-                  :key="tab.target"
-                  type="button"
-                  role="tab"
-                  class="lid-desktop-field-tab"
-                  :class="{ 'lid-desktop-field-tab--active': desktopNumericTarget === tab.target }"
-                  :aria-selected="desktopNumericTarget === tab.target"
-                  @click="activateDesktopNumericTarget(tab.target)"
-                >
-                  {{ tab.label }}
-                </button>
-              </div>
-              <RpNumericTouchpad
-                v-model="desktopTouchpadModel"
-                class="lid-touchpad lid-touchpad--desktop-rail"
-                size="sm"
-                shape="rounded"
-                gap="8px"
-                key-max-width="56px"
-                key-min-height="48px"
-                font-size="20px"
-                key-radius="12px"
-                backspace-icon-size="22px"
-                :allow-decimal="desktopTouchAllowDecimal"
-                :max-length="desktopTouchMaxLength"
-                :aria-label="desktopTouchAriaLabel"
-              />
-            </div>
-          </div>
-        </div>
-
         <div class="lid-content-panel">
           <div v-if="isLineDialogCompact" class="lid-mobile-hero">
             <div class="lid-mobile-hero__thumb">
@@ -122,80 +64,26 @@
           </div>
 
           <div class="lid-content-scroll">
-            <div v-if="!isLineDialogCompact" class="lid-topbar">
-              <div class="lid-title-wrap">
-                <div class="lid-eyebrow">{{ eyebrowText }}</div>
-                <h1 class="lid-dialog-title">{{ dialogTitle }}</h1>
-                <p class="lid-dialog-desc">{{ descText }}</p>
+            <div v-if="!isLineDialogCompact" class="lid-desktop-header">
+              <div class="lid-topbar">
+                <div class="lid-eyebrow lid-eyebrow--desktop-badge">{{ eyebrowText }}</div>
+                <q-btn
+                  flat
+                  round
+                  dense
+                  icon="close"
+                  class="lid-close-btn lid-close-btn--desktop"
+                  :aria-label="t('system.cancel')"
+                  @click="cartStore.closeLineDialog()"
+                />
               </div>
-              <q-btn
-                flat
-                round
-                dense
-                icon="close"
-                class="lid-close-btn"
-                :aria-label="t('system.cancel')"
-                @click="cartStore.closeLineDialog()"
-              />
+              <h1 class="lid-dialog-title lid-dialog-title--desktop">{{ dialogTitle }}</h1>
+              <p class="lid-dialog-desc lid-dialog-desc--desktop">{{ descText }}</p>
             </div>
             <p v-else class="lid-dialog-desc lid-dialog-desc--mobile">{{ descText }}</p>
 
             <template v-if="formReady">
               <div class="lid-section-grid">
-                <div class="lid-field">
-                  <div class="lid-field-label">{{ t('pos.warehouseShipping') }}</div>
-                  <q-select
-                    v-if="isCatalog"
-                    v-model="warehouseId"
-                    class="lid-select"
-                    :options="warehouseOptions"
-                    option-value="id"
-                    option-label="label"
-                    emit-value
-                    map-options
-                    borderless
-                    dense
-                    dropdown-icon="expand_more"
-                    @popup-show="closeAllPads"
-                  >
-                    <template #selected>
-                      <div class="lid-select-text">
-                        <span class="lid-select-caption">{{ t('pos.warehouseFieldCaption') }}</span>
-                        <span class="lid-select-value">{{ warehouseDisplayLabel }}</span>
-                      </div>
-                    </template>
-                  </q-select>
-                  <div v-else class="lid-select-box" aria-readonly="true">
-                    <div class="lid-select-text">
-                      <span class="lid-select-caption">{{ t('pos.warehouseFieldCaption') }}</span>
-                      <span class="lid-select-value">{{ warehouseLabelReadonly }}</span>
-                    </div>
-                    <q-icon name="expand_more" size="20px" class="lid-chevron" aria-hidden="true" />
-                  </div>
-                </div>
-
-                <div class="lid-field">
-                  <div class="lid-field-label">{{ t('pos.changeUnit') }}</div>
-                  <q-select
-                    v-model="uom"
-                    class="lid-select"
-                    :options="uomOptions"
-                    emit-value
-                    map-options
-                    borderless
-                    dense
-                    dropdown-icon="expand_more"
-                    @popup-show="closeAllPads"
-                  >
-                    <template #selected>
-                      <div class="lid-select-text">
-                        <span class="lid-select-caption">{{ t('pos.uomFieldCaption') }}</span>
-                        <span class="lid-select-value">{{ uom }}</span>
-                      </div>
-                    </template>
-                  </q-select>
-                </div>
-
                 <div class="lid-field">
                   <div class="lid-field-label">{{ t('pos.priceList') }}</div>
                   <q-select
@@ -226,7 +114,11 @@
                     <div class="lid-field-label">{{ t('pos.rate') }}</div>
                     <div class="lid-helper-text">{{ t('pos.pricePerUnitHint') }}</div>
                   </div>
-                  <div ref="rateZoneRef" class="lid-input-box lid-input-box--price">
+                  <div
+                    ref="rateZoneRef"
+                    class="lid-input-box lid-input-box--price"
+                    @pointerdown="onDesktopNumericFieldPointerDown"
+                  >
                     <q-input
                       v-model="rateStr"
                       class="lid-price-input"
@@ -257,42 +149,43 @@
                 </div>
               </div>
 
+              <div class="lid-field lid-field--uom">
+                <div class="lid-field-label">{{ t('pos.changeUnit') }}</div>
+                <q-select
+                  v-model="uom"
+                  class="lid-select"
+                  :options="uomOptions"
+                  emit-value
+                  map-options
+                  borderless
+                  dense
+                  dropdown-icon="expand_more"
+                  @popup-show="closeAllPads"
+                >
+                  <template #selected>
+                    <div class="lid-select-text">
+                      <span class="lid-select-caption">{{ t('pos.uomFieldCaption') }}</span>
+                      <span class="lid-select-value">{{ uom }}</span>
+                    </div>
+                  </template>
+                </q-select>
+              </div>
+
               <div class="lid-section">
                 <div class="lid-helper-row">
                   <div class="lid-field-label">{{ t('pos.discounts') }}</div>
                   <div class="lid-helper-text">{{ t('pos.discountMethodHint') }}</div>
                 </div>
-                <div ref="discountZoneRef" class="lid-discount-box">
-                  <q-input
+                <div
+                  ref="discountZoneRef"
+                  @pointerdown="onDesktopNumericFieldPointerDown"
+                >
+                  <RpPosDiscountLine
                     v-model="discountValue"
-                    class="lid-discount-value-field"
-                    borderless
-                    dense
-                    type="text"
-                    inputmode="decimal"
-                    :placeholder="t('pos.discountValuePlaceholder')"
+                    v-model:mode="discountMode"
+                    :variant="isLineDialogCompact ? 'compact' : 'desktop'"
                     @focus="onDiscountFocus"
                   />
-                  <button
-                    type="button"
-                    class="lid-discount-tab"
-                    :class="{ 'lid-discount-tab--active': discountMode === 'percent' }"
-                    :aria-pressed="discountMode === 'percent'"
-                    :aria-label="t('pos.discountModePercent')"
-                    @click="setDiscountMode('percent')"
-                  >
-                    %
-                  </button>
-                  <button
-                    type="button"
-                    class="lid-discount-tab"
-                    :class="{ 'lid-discount-tab--active': discountMode === 'fixed' }"
-                    :aria-pressed="discountMode === 'fixed'"
-                    :aria-label="t('pos.discountModeFixed')"
-                    @click="setDiscountMode('fixed')"
-                  >
-                    $
-                  </button>
                 </div>
                 <RpNumericTouchpad
                   v-show="isLineDialogCompact && discountPadOpen"
@@ -317,7 +210,11 @@
                   <div class="lid-field-label">{{ t('pos.quantity') }}</div>
                   <div class="lid-helper-text">{{ t('pos.qtyQuickHint') }}</div>
                 </div>
-                <div ref="qtyZoneRef" class="lid-qty-row">
+                <div
+                  ref="qtyZoneRef"
+                  class="lid-qty-row"
+                  @pointerdown="onDesktopNumericFieldPointerDown"
+                >
                   <button
                     type="button"
                     class="lid-stepper-btn"
@@ -371,10 +268,6 @@
                   <div class="lid-summary-label">{{ t('pos.summaryWarehouse') }}</div>
                   <div class="lid-summary-value">{{ summaryWarehouseValue }}</div>
                 </div>
-                <div class="lid-summary-item">
-                  <div class="lid-summary-label">{{ t('pos.summaryPriceType') }}</div>
-                  <div class="lid-summary-value">{{ summaryPriceTypeLong }}</div>
-                </div>
               </div>
             </template>
           </div>
@@ -400,6 +293,65 @@
             </div>
           </div>
         </div>
+
+        <div v-if="!isLineDialogCompact" class="lid-image-rail">
+          <div class="lid-image-panel">
+            <div class="lid-product-image-frame">
+              <q-img
+                class="lid-product-image rounded-borders"
+                :src="imageSrc"
+                fit="cover"
+                spinner-color="primary"
+                :ratio="3 / 4"
+              >
+                <template #error>
+                  <div
+                    class="lid-product-image lid-product-image--fallback row items-center justify-center"
+                    aria-hidden="true"
+                  >
+                    <q-icon name="image_not_supported" size="56px" color="grey-6" />
+                  </div>
+                </template>
+              </q-img>
+            </div>
+          </div>
+
+          <div class="lid-desktop-keypad">
+            <div class="lid-desktop-keypad-inner">
+              <div class="lid-desktop-keypad-label">{{ t('pos.numericKeypadHint') }}</div>
+              <div class="lid-desktop-field-tabs" role="tablist" :aria-label="t('pos.numericKeypadHint')">
+                <button
+                  v-for="tab in desktopNumericTabs"
+                  :key="tab.target"
+                  type="button"
+                  role="tab"
+                  class="lid-desktop-field-tab"
+                  :class="{ 'lid-desktop-field-tab--active': desktopNumericTarget === tab.target }"
+                  :aria-selected="desktopNumericTarget === tab.target"
+                  @click="activateDesktopNumericTarget(tab.target)"
+                >
+                  {{ tab.label }}
+                </button>
+              </div>
+              <RpNumericTouchpad
+                :model-value="desktopTouchpadModel"
+                class="lid-touchpad lid-touchpad--desktop-rail"
+                fill-height
+                size="md"
+                shape="rounded"
+                gap="4px"
+                key-min-height="48px"
+                font-size="clamp(20px, 2.4vmin, 28px)"
+                key-radius="11px"
+                backspace-icon-size="24px"
+                :allow-decimal="desktopTouchAllowDecimal"
+                :max-length="desktopTouchMaxLength"
+                :aria-label="desktopTouchAriaLabel"
+                @update:model-value="onDesktopTouchpadModelUpdate"
+              />
+            </div>
+          </div>
+        </div>
       </div>
     </q-card>
   </q-dialog>
@@ -414,6 +366,7 @@ import { useI18n } from 'vue-i18n';
 const vTouchPan = TouchPan;
 
 import RpNumericTouchpad from 'src/components/common/RpNumericTouchpad.vue';
+import RpPosDiscountLine from 'src/components/pos/RpPosDiscountLine.vue';
 import {
   formatUsd,
   type PriceListKind,
@@ -488,7 +441,9 @@ type DesktopNumericTarget = 'rate' | 'discount' | 'qty';
 
 const desktopNumericTarget = ref<DesktopNumericTarget>('rate');
 
-const warehouseId = ref(cartStore.defaultWarehouseId);
+/** Десктоп: после таба нумпада первая цифра с тачпада заменяет значение целиком (иначе дописывается к строке). */
+const desktopNumpadReplaceNext = ref(false);
+
 const qtyStr = ref('1');
 const rateStr = ref('0');
 const discountValue = ref('');
@@ -506,8 +461,6 @@ const ratePadOpen = ref(false);
 const qtyPadOpen = ref(false);
 const discountPadOpen = ref(false);
 
-const warehouseOptions = computed(() => cartStore.warehouses);
-
 const isCatalog = computed(() => cartStore.lineDialogContext?.mode === 'catalog');
 
 const formReady = computed(() => !!cartStore.lineDialogContext);
@@ -517,14 +470,22 @@ const priceKindOptions = computed(() => [
   { label: t('pos.priceWholesale'), value: 'wholesale' as const },
 ]);
 
-const warehouseDisplayLabel = computed(() => {
-  const w = warehouseOptions.value.find((o) => o.id === warehouseId.value);
-  return w?.label ?? '';
-});
-
 const priceListDisplayLabel = computed(() => {
   const o = priceKindOptions.value.find((o) => o.value === priceListKind.value);
   return o?.label ?? '';
+});
+
+const uomOptions = computed(() => {
+  const ctx = cartStore.lineDialogContext;
+  if (!ctx) return [];
+  if (ctx.mode === 'catalog') {
+    const p = cartStore.catalog.find((x) => x.id === ctx.productId);
+    return (p?.uoms ?? ['шт']).map((v) => ({ label: v, value: v }));
+  }
+  const line = cartStore.lines.find((l) => l.id === ctx.lineId);
+  const p = line ? cartStore.catalog.find((x) => x.id === line.productId) : undefined;
+  const set = new Set<string>([...(p?.uoms ?? []), line?.uom].filter(Boolean) as string[]);
+  return [...set].map((v) => ({ label: v, value: v }));
 });
 
 const discountMaxDigits = computed(() =>
@@ -537,33 +498,69 @@ const desktopNumericTabs = computed(() => [
   { target: 'qty' as const, label: t('pos.quantity') },
 ]);
 
-const desktopTouchpadModel = computed({
-  get(): string {
-    switch (desktopNumericTarget.value) {
-      case 'rate':
-        return rateStr.value;
-      case 'discount':
-        return discountValue.value;
-      case 'qty':
-        return qtyStr.value;
-      default:
-        return '';
-    }
-  },
-  set(v: string) {
-    switch (desktopNumericTarget.value) {
-      case 'rate':
-        rateStr.value = v;
-        break;
-      case 'discount':
-        discountValue.value = v;
-        break;
-      case 'qty':
-        qtyStr.value = v;
-        break;
-    }
-  },
+const desktopTouchpadModel = computed(() => {
+  switch (desktopNumericTarget.value) {
+    case 'rate':
+      return rateStr.value;
+    case 'discount':
+      return discountValue.value;
+    case 'qty':
+      return qtyStr.value;
+    default:
+      return '';
+  }
 });
+
+function desktopFieldStringFor(target: DesktopNumericTarget): string {
+  switch (target) {
+    case 'rate':
+      return rateStr.value;
+    case 'discount':
+      return discountValue.value;
+    case 'qty':
+      return qtyStr.value;
+    default:
+      return '';
+  }
+}
+
+function setDesktopFieldStringForTarget(target: DesktopNumericTarget, v: string): void {
+  switch (target) {
+    case 'rate':
+      rateStr.value = v;
+      break;
+    case 'discount':
+      discountValue.value = v;
+      break;
+    case 'qty':
+      qtyStr.value = v;
+      break;
+  }
+}
+
+function onDesktopTouchpadModelUpdate(newVal: string): void {
+  const target = desktopNumericTarget.value;
+  const oldVal = desktopFieldStringFor(target);
+  if (
+    desktopNumpadReplaceNext.value &&
+    newVal.length === oldVal.length + 1 &&
+    newVal.startsWith(oldVal)
+  ) {
+    setDesktopFieldStringForTarget(target, newVal.slice(-1));
+    desktopNumpadReplaceNext.value = false;
+    return;
+  }
+  desktopNumpadReplaceNext.value = false;
+  setDesktopFieldStringForTarget(target, newVal);
+}
+
+function onDesktopNumericFieldPointerDown(ev: PointerEvent): void {
+  if (isLineDialogCompact.value) return;
+  const el = ev.target as HTMLElement | null;
+  if (el?.closest?.('input')) {
+    desktopNumpadReplaceNext.value = false;
+  }
+}
 
 const desktopTouchAllowDecimal = computed(
   () =>
@@ -600,6 +597,7 @@ function focusInputInContainer(el: HTMLElement | null | undefined): void {
 
 function activateDesktopNumericTarget(target: DesktopNumericTarget): void {
   desktopNumericTarget.value = target;
+  desktopNumpadReplaceNext.value = true;
   void nextTick(() => {
     if (target === 'rate') focusInputInContainer(rateZoneRef.value);
     else if (target === 'discount') focusInputInContainer(discountZoneRef.value);
@@ -628,25 +626,6 @@ const imageSrc = computed(() => {
   return line?.imageUrl ?? '';
 });
 
-const warehouseLabelReadonly = computed(() => {
-  const ctx = cartStore.lineDialogContext;
-  if (!ctx || ctx.mode !== 'cart') return '';
-  return cartStore.lines.find((l) => l.id === ctx.lineId)?.warehouseLabel ?? '';
-});
-
-const uomOptions = computed(() => {
-  const ctx = cartStore.lineDialogContext;
-  if (!ctx) return [];
-  if (ctx.mode === 'catalog') {
-    const p = cartStore.catalog.find((x) => x.id === ctx.productId);
-    return (p?.uoms ?? ['шт']).map((v) => ({ label: v, value: v }));
-  }
-  const line = cartStore.lines.find((l) => l.id === ctx.lineId);
-  const p = line ? cartStore.catalog.find((x) => x.id === line.productId) : undefined;
-  const set = new Set<string>([...(p?.uoms ?? []), line?.uom].filter(Boolean) as string[]);
-  return [...set].map((v) => ({ label: v, value: v }));
-});
-
 const eyebrowText = computed(() =>
   isCatalog.value ? t('pos.lineItemEyebrowCatalog') : t('pos.lineItemEyebrowCart'),
 );
@@ -657,16 +636,6 @@ const descText = computed(() =>
 
 const footerNote = computed(() =>
   isCatalog.value ? t('pos.lineItemFooterCatalog') : t('pos.lineItemFooterCart'),
-);
-
-const summaryPriceTypeLong = computed(() =>
-  priceListKind.value === 'wholesale'
-    ? t('pos.priceTypeWholesaleLong')
-    : t('pos.priceTypeRetailLong'),
-);
-
-const summaryWarehouseValue = computed(() =>
-  isCatalog.value ? warehouseDisplayLabel.value : warehouseLabelReadonly.value,
 );
 
 function roundMoney(n: number): number {
@@ -705,6 +674,17 @@ const summaryLineTotal = computed(() => {
   const g = previewLineGross();
   const d = previewDiscountAbs(g);
   return formatUsd(roundMoney(g - d));
+});
+
+/** Склад для подписи в итоге (без поля редактирования): дефолт из каталога или строка чека. */
+const summaryWarehouseValue = computed(() => {
+  const ctx = cartStore.lineDialogContext;
+  if (!ctx) return '';
+  if (ctx.mode === 'catalog') {
+    const w = cartStore.warehouses.find((o) => o.id === cartStore.defaultWarehouseId);
+    return w?.label ?? '';
+  }
+  return cartStore.lines.find((l) => l.id === ctx.lineId)?.warehouseLabel ?? '';
 });
 
 const valid = computed(() => {
@@ -746,7 +726,9 @@ onBeforeUnmount(() => {
 
 function onRateFocus(): void {
   if (!isLineDialogCompact.value) {
+    const prev = desktopNumericTarget.value;
     desktopNumericTarget.value = 'rate';
+    if (prev !== 'rate') desktopNumpadReplaceNext.value = true;
     return;
   }
   ratePadOpen.value = true;
@@ -756,7 +738,9 @@ function onRateFocus(): void {
 
 function onQtyFocus(): void {
   if (!isLineDialogCompact.value) {
+    const prev = desktopNumericTarget.value;
     desktopNumericTarget.value = 'qty';
+    if (prev !== 'qty') desktopNumpadReplaceNext.value = true;
     return;
   }
   qtyPadOpen.value = true;
@@ -766,7 +750,9 @@ function onQtyFocus(): void {
 
 function onDiscountFocus(): void {
   if (!isLineDialogCompact.value) {
+    const prev = desktopNumericTarget.value;
     desktopNumericTarget.value = 'discount';
+    if (prev !== 'discount') desktopNumpadReplaceNext.value = true;
     return;
   }
   discountPadOpen.value = true;
@@ -774,14 +760,10 @@ function onDiscountFocus(): void {
   qtyPadOpen.value = false;
 }
 
-function setDiscountMode(mode: 'percent' | 'fixed'): void {
-  if (discountMode.value !== mode) {
-    discountMode.value = mode;
-    discountValue.value = '';
-  }
-}
-
 function bumpQty(delta: number): void {
+  if (!isLineDialogCompact.value) {
+    desktopNumpadReplaceNext.value = false;
+  }
   const cur = parseInt(qtyStr.value.replace(/\D/g, ''), 10) || 1;
   const q = Math.max(1, cur + delta);
   qtyStr.value = String(q);
@@ -804,12 +786,12 @@ function syncFormFromContext(): void {
   if (!ctx) return;
 
   closeAllPads();
+  desktopNumpadReplaceNext.value = false;
   desktopNumericTarget.value = 'rate';
 
   if (ctx.mode === 'catalog') {
     const p = cartStore.catalog.find((x) => x.id === ctx.productId);
     if (!p) return;
-    warehouseId.value = cartStore.defaultWarehouseId;
     qtyStr.value = '1';
     retailSnapshot.value = p.retailRate;
     wholesaleSnapshot.value = p.wholesaleRate;
@@ -823,12 +805,11 @@ function syncFormFromContext(): void {
 
   const line = cartStore.lines.find((l) => l.id === ctx.lineId);
   if (!line) return;
-  warehouseId.value = line.warehouseId;
+  uom.value = line.uom;
   qtyStr.value = String(line.qty);
   retailSnapshot.value = line.retailRate;
   wholesaleSnapshot.value = line.wholesaleRate;
   priceListKind.value = line.priceListKind;
-  uom.value = line.uom;
   rateStr.value = formatRateStr(line.rate);
   discountMode.value = line.discountMode;
   if (line.discountMode === 'percent') {
@@ -882,6 +863,10 @@ function parseDiscountForSubmit(): {
   return { discountMode: 'fixed', discountPercent: 0, discountFixed: roundMoney(d) };
 }
 
+function submitWarehouseIdForCatalog(): string {
+  return cartStore.defaultWarehouseId;
+}
+
 function onSubmit(): void {
   const ctx = cartStore.lineDialogContext;
   if (!ctx || !valid.value) return;
@@ -893,7 +878,7 @@ function onSubmit(): void {
   if (ctx.mode === 'catalog') {
     cartStore.addFromCatalog(
       ctx.productId,
-      warehouseId.value,
+      submitWarehouseIdForCatalog(),
       qty,
       rate,
       uom.value,
@@ -949,8 +934,8 @@ function onSubmit(): void {
 
 .lid-dialog-card {
   width: 100%;
-  max-width: 920px;
-  min-height: min(560px, 95vh);
+  max-width: min(1160px, 98vw);
+  min-height: min(480px, 92vh);
   max-height: 95vh;
   border-radius: var(--rp-radius-lg);
   background: var(--rp-card);
@@ -982,17 +967,25 @@ function onSubmit(): void {
 
 @media (min-width: 821px) {
   .lid-dialog-main {
-    grid-template-columns: minmax(0, 1fr) minmax(300px, 400px);
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    flex: 1 1 auto;
+    min-height: 0;
   }
 
   .lid-content-panel {
-    grid-column: 1;
-    grid-row: 1;
+    flex: 1 1 49%;
+    max-width: 49%;
+    min-width: 0;
+    border-right: 1px solid var(--rp-border);
   }
 
   .lid-image-rail {
-    grid-column: 2;
-    grid-row: 1;
+    flex: 1 1 51%;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
   }
 }
 
@@ -1003,6 +996,12 @@ function onSubmit(): void {
   min-width: 0;
   background: var(--rp-muted);
   overflow-x: hidden;
+}
+
+@media (min-width: 821px) {
+  .lid-image-rail {
+    background: color-mix(in srgb, var(--rp-muted) 82%, #0c0c0e);
+  }
 }
 
 .lid-image-panel {
@@ -1027,14 +1026,27 @@ function onSubmit(): void {
 @media (min-width: 821px) {
   .lid-image-panel {
     flex: 0 0 auto;
-    padding: 14px 12px 10px;
+    flex-shrink: 1;
+    padding: 12px 20px 10px;
     overflow: visible;
+    align-items: center;
+    justify-content: center;
+    min-height: 0;
   }
 
   .lid-product-image-frame {
-    max-width: 260px;
-    align-self: center;
+    max-width: min(220px, 100%);
     width: 100%;
+    max-height: 280px;
+    align-self: center;
+  }
+
+  .lid-product-image {
+    max-height: 280px;
+  }
+
+  .lid-product-image :deep(.q-img__container) {
+    max-height: 280px;
   }
 }
 
@@ -1061,6 +1073,17 @@ function onSubmit(): void {
   background: color-mix(in srgb, var(--rp-card) 40%, var(--rp-muted));
 }
 
+@media (min-width: 821px) {
+  .lid-desktop-keypad {
+    flex: 1 1 0;
+    min-height: 0;
+    padding: 12px 18px 16px;
+    border-top-color: var(--rp-border);
+    background: transparent;
+    overflow: hidden;
+  }
+}
+
 .lid-desktop-keypad-inner {
   flex: 1;
   min-height: 0;
@@ -1073,6 +1096,22 @@ function onSubmit(): void {
   -webkit-overflow-scrolling: touch;
 }
 
+@media (min-width: 821px) {
+  .lid-desktop-keypad-inner {
+    flex: 1 1 auto;
+    gap: 10px;
+    justify-content: flex-start;
+    overflow: hidden;
+    overflow-y: hidden;
+    min-height: 0;
+  }
+
+  .lid-desktop-keypad-inner .lid-desktop-keypad-label,
+  .lid-desktop-keypad-inner .lid-desktop-field-tabs {
+    flex-shrink: 0;
+  }
+}
+
 .lid-desktop-keypad-label {
   font-size: 12px;
   font-weight: 500;
@@ -1080,6 +1119,14 @@ function onSubmit(): void {
   line-height: 1.35;
   margin: 0;
   text-align: center;
+}
+
+@media (min-width: 821px) {
+  .lid-desktop-keypad-label {
+    font-size: 12px;
+    margin-bottom: 0;
+    line-height: 1.25;
+  }
 }
 
 .lid-desktop-field-tabs {
@@ -1111,8 +1158,11 @@ function onSubmit(): void {
     color 0.15s ease;
 }
 
-.lid-desktop-field-tab:hover {
-  background: color-mix(in srgb, var(--rp-foreground) 5%, var(--rp-input));
+/* :hover без :not() перебивает --active (специфичность :hover выше) → ломался фон и оставался тёмный primary-foreground на тёмном фоне */
+.lid-desktop-field-tab:not(.lid-desktop-field-tab--active):hover {
+  background: color-mix(in srgb, var(--rp-foreground) 8%, var(--rp-input));
+  border-color: color-mix(in srgb, var(--rp-foreground) 14%, var(--rp-border));
+  color: var(--rp-foreground);
 }
 
 .lid-desktop-field-tab--active {
@@ -1121,14 +1171,96 @@ function onSubmit(): void {
   border-color: var(--rp-primary);
 }
 
+.lid-desktop-field-tab--active:hover {
+  background: var(--rp-primary);
+  color: var(--rp-primary-foreground);
+  border-color: var(--rp-primary);
+  filter: brightness(1.04);
+}
+
 .lid-desktop-field-tab:focus-visible {
   outline: 2px solid var(--rp-primary);
   outline-offset: 2px;
 }
 
+@media (min-width: 821px) {
+  .lid-desktop-field-tabs {
+    gap: 10px;
+    margin-bottom: 0;
+  }
+
+  .lid-desktop-field-tab {
+    min-height: 48px;
+    padding: 8px 12px;
+    font-size: 15px;
+    font-weight: 500;
+  }
+}
+
 .lid-touchpad--desktop-rail {
-  flex-shrink: 0;
   width: 100%;
+}
+
+@media (min-width: 821px) {
+  .lid-desktop-keypad-inner .lid-touchpad--desktop-rail {
+    flex: 1 1 auto;
+    min-height: 0;
+    align-self: stretch;
+  }
+
+  .lid-touchpad--desktop-rail :deep(.rp-num-touchpad) {
+    gap: 4px;
+  }
+
+  .lid-touchpad--desktop-rail :deep(.rp-num-touchpad__key--digit) {
+    background: color-mix(in srgb, var(--rp-foreground) 7%, var(--rp-input));
+    font-weight: 500;
+  }
+
+  .lid-touchpad--desktop-rail :deep(.rp-num-touchpad__key--action) {
+    background: color-mix(in srgb, var(--rp-foreground) 7%, var(--rp-input));
+  }
+}
+
+.lid-desktop-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.lid-eyebrow--desktop-badge {
+  border-radius: 100px;
+  padding: 6px 14px;
+  background: color-mix(in srgb, var(--rp-foreground) 8%, var(--rp-secondary));
+  color: var(--rp-muted-foreground);
+  font-weight: 500;
+}
+
+@media (min-width: 821px) {
+  .lid-dialog-title--desktop {
+    font-size: clamp(1.5rem, 2.6vw, 1.85rem);
+    font-weight: 600;
+    letter-spacing: -0.5px;
+    line-height: 1.15;
+    margin: 0 0 10px;
+  }
+
+  .lid-dialog-desc--desktop {
+    margin: 0 0 22px;
+    max-width: 96%;
+    font-size: 14px;
+    line-height: 1.45;
+  }
+
+  .lid-close-btn--desktop {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+    border-radius: var(--rp-radius-md);
+    background: color-mix(in srgb, var(--rp-foreground) 8%, var(--rp-secondary));
+    color: var(--rp-foreground);
+  }
 }
 
 .lid-product-image--fallback {
@@ -1244,8 +1376,37 @@ function onSubmit(): void {
 
 @media (min-width: 821px) {
   .lid-content-scroll {
-    padding: 22px 26px 18px;
-    gap: 18px;
+    padding: 24px 28px 18px;
+    gap: 0;
+    scrollbar-width: thin;
+    scrollbar-color: var(--rp-border) transparent;
+  }
+
+  .lid-content-scroll::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .lid-content-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .lid-content-scroll::-webkit-scrollbar-thumb {
+    background: var(--rp-border);
+    border-radius: 10px;
+  }
+
+  .lid-section-grid {
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+
+  .lid-field--uom {
+    margin-bottom: 18px;
+  }
+
+  .lid-section {
+    gap: 10px;
+    margin-bottom: 18px;
   }
 }
 
@@ -1258,9 +1419,10 @@ function onSubmit(): void {
 
 .lid-topbar {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 16px;
+  margin-bottom: 16px;
 }
 
 .lid-title-wrap {
@@ -1321,6 +1483,12 @@ function onSubmit(): void {
   .lid-section-grid {
     grid-template-columns: 1fr;
   }
+}
+
+.lid-field--uom {
+  margin-top: 2px;
+  width: 100%;
+  min-width: 0;
 }
 
 .lid-section {
@@ -1442,7 +1610,6 @@ function onSubmit(): void {
 
 /* Quasar dense: фиксированная height: 40px + отступы у native — текст «прилипает» к верху */
 .lid-price-input :deep(.q-field),
-.lid-discount-value-field :deep(.q-field),
 .lid-stepper-center :deep(.q-field) {
   padding: 0;
 }
@@ -1453,7 +1620,6 @@ function onSubmit(): void {
 }
 
 .lid-price-input :deep(.q-field__control),
-.lid-discount-value-field :deep(.q-field__control),
 .lid-stepper-center :deep(.q-field__control) {
   min-height: 52px;
   height: auto !important;
@@ -1461,7 +1627,6 @@ function onSubmit(): void {
 }
 
 .lid-price-input :deep(.q-field__control-container),
-.lid-discount-value-field :deep(.q-field__control-container),
 .lid-stepper-center :deep(.q-field__control-container) {
   padding-top: 0 !important;
   padding-bottom: 0 !important;
@@ -1470,7 +1635,6 @@ function onSubmit(): void {
 }
 
 .lid-price-input :deep(.q-field__native),
-.lid-discount-value-field :deep(.q-field__native),
 .lid-stepper-center :deep(.q-field__native) {
   padding-top: 0 !important;
   padding-bottom: 0 !important;
@@ -1488,63 +1652,9 @@ function onSubmit(): void {
   padding: 0;
 }
 
-.lid-discount-value-field :deep(input),
 .lid-stepper-center :deep(input) {
   line-height: 1.25;
   padding: 0;
-}
-
-.lid-discount-box {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 56px 56px;
-  gap: 0;
-  border-radius: var(--rp-radius-md);
-  overflow: hidden;
-  border: 1px solid var(--rp-border);
-  background: var(--rp-input);
-}
-
-.lid-discount-value-field {
-  min-width: 0;
-}
-
-.lid-discount-value-field :deep(.q-field__control) {
-  padding: 0 16px;
-  color: var(--rp-foreground);
-}
-
-.lid-discount-value-field :deep(input) {
-  font-size: 18px;
-  font-weight: 500;
-}
-
-.lid-discount-tab {
-  min-height: 52px;
-  margin: 0;
-  padding: 0;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 22px;
-  font-weight: 600;
-  background: var(--rp-secondary);
-  color: var(--rp-secondary-foreground);
-  transition:
-    background 0.15s ease,
-    color 0.15s ease;
-}
-
-.lid-discount-tab--active {
-  background: var(--rp-primary);
-  color: var(--rp-primary-foreground);
-}
-
-.lid-discount-tab:focus-visible {
-  outline: 2px solid var(--rp-primary);
-  outline-offset: -2px;
-  z-index: 1;
 }
 
 .lid-qty-row {
@@ -1601,7 +1711,7 @@ function onSubmit(): void {
   border-radius: var(--rp-radius-md);
   padding: 16px;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
 
@@ -1649,7 +1759,85 @@ function onSubmit(): void {
 
 @media (min-width: 821px) {
   .lid-dialog-footer {
-    padding: 12px 26px 16px;
+    padding: 18px 28px;
+    align-items: center;
+    flex-wrap: nowrap;
+    background: var(--rp-card);
+  }
+
+  .lid-footer-actions {
+    gap: 20px;
+  }
+
+  .lid-primary-btn {
+    min-height: 52px;
+    padding: 0 28px;
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: var(--rp-radius-md);
+  }
+
+  .lid-ghost-btn {
+    min-height: 44px;
+    font-size: 16px;
+    font-weight: 500;
+  }
+
+  .lid-select :deep(.q-field__control) {
+    min-height: 60px;
+    padding: 10px 14px;
+  }
+
+  .lid-select-value {
+    font-size: 18px;
+    font-weight: 500;
+  }
+
+  .lid-input-box--price {
+    min-height: 60px;
+    padding: 0 14px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: stretch;
+  }
+
+  .lid-price-input :deep(.q-field__control),
+  .lid-stepper-center :deep(.q-field__control) {
+    min-height: 60px;
+  }
+
+  .lid-qty-row {
+    grid-template-columns: 60px minmax(0, 1fr) 60px;
+    gap: 10px;
+  }
+
+  .lid-stepper-btn {
+    width: 60px;
+    height: 60px;
+  }
+
+  .lid-stepper-center {
+    min-height: 60px;
+  }
+
+  .lid-stepper-center :deep(input) {
+    font-size: 18px;
+    font-weight: 500;
+  }
+
+  .lid-summary-card {
+    padding: 16px;
+    margin-top: 22px;
+    gap: 8px 12px;
+    background: var(--rp-input);
+  }
+
+  .lid-summary-label {
+    font-size: 12px;
+  }
+
+  .lid-summary-value {
+    font-size: 18px;
   }
 }
 
