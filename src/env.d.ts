@@ -1,3 +1,7 @@
+interface Window {
+  csrf_token?: string;
+}
+
 declare namespace NodeJS {
   interface ProcessEnv {
     NODE_ENV: string;

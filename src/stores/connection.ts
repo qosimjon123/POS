@@ -1,11 +1,26 @@
 import { defineStore } from 'pinia';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
+
+import { checkConnection } from 'src/api/connectionCheck';
 
 export const useConnectionStore = defineStore('connection', () => {
+  /** Сеть браузера (`navigator.onLine`). */
   const online = ref(typeof navigator !== 'undefined' ? navigator.onLine : true);
+
+  /** Frappe ответил на `frappe.ping`; `null` — ещё не проверяли. */
+  const frappeReachable = ref<boolean | null>(null);
+
+  async function refreshFrappePing() {
+    if (!online.value) {
+      frappeReachable.value = false;
+      return;
+    }
+    frappeReachable.value = await checkConnection();
+  }
 
   function syncFromNavigator() {
     online.value = navigator.onLine;
+    void refreshFrappePing();
   }
 
   function bindWindowEvents() {
@@ -18,5 +33,16 @@ export const useConnectionStore = defineStore('connection', () => {
     window.removeEventListener('offline', syncFromNavigator);
   }
 
-  return { online, syncFromNavigator, bindWindowEvents, unbindWindowEvents };
+  /** Онлайн в браузере и успешный `frappe.ping`. */
+  const serverConnected = computed(() => online.value && frappeReachable.value === true);
+
+  return {
+    online,
+    frappeReachable,
+    serverConnected,
+    refreshFrappePing,
+    syncFromNavigator,
+    bindWindowEvents,
+    unbindWindowEvents,
+  };
 });

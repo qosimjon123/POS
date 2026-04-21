@@ -23,6 +23,7 @@
     "@quasar/extras": "^1.16.4",
     "axios": "^1.13.6",
     "barcode-detector": "^3.1.2",
+    "frappe-js-sdk": "^1.12.0",
     "grid-layout-plus": "^1.1.1",
     "pinia": "^3.0.1",
     "qrcode": "^1.5.4",

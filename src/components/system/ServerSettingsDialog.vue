@@ -7,7 +7,7 @@
 
       <q-card-section>
         <q-input
-          v-model="settingsDraftUrl"
+          v-model="dialogDraftBaseUrl"
           outlined
           stack-label
           hide-hint
@@ -51,7 +51,7 @@ const $q = useQuasar();
 const { t } = useI18n();
 const serverStore = useServerSettingsStore();
 
-const { settingsDraftUrl, settingsUrlInvalid } = storeToRefs(serverStore);
+const { dialogDraftBaseUrl, settingsUrlInvalid } = storeToRefs(serverStore);
 
 const dialogVisible = computed({
   get: () => serverStore.settingsDialogOpen,

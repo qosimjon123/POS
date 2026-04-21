@@ -3,7 +3,7 @@
     <q-icon
       name="wifi"
       size="20px"
-      :color="connectionStore.online ? 'positive' : 'negative'"
+      :color="statusColor"
     />
   </div>
 </template>
@@ -16,7 +16,13 @@ import { useConnectionStore } from 'src/stores/connection';
 const { t } = useI18n();
 const connectionStore = useConnectionStore();
 
+const statusColor = computed(() => {
+  if (!connectionStore.online) return 'negative';
+  if (connectionStore.frappeReachable === null) return 'warning';
+  return connectionStore.serverConnected ? 'positive' : 'negative';
+});
+
 const ariaLabel = computed(() =>
-  connectionStore.online ? t('system.connected') : t('system.disconnected'),
+  connectionStore.serverConnected ? t('system.connected') : t('system.disconnected'),
 );
 </script>

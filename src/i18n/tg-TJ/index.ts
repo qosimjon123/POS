@@ -43,6 +43,7 @@ export default {
     passwordLabel: 'Парол',
     rememberSession: 'Ёд кардани ҷаласа',
     signIn: 'Даромадан',
+    signInFailed: 'Ворид нашуд. Логин ва паролро санҷед.',
     adminNote:
       'Чун нусхаи захиравӣ барои воридшавии стандартӣ истифода мешавад.',
     required: 'Майдони ҳатмӣ',

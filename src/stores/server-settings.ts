@@ -2,44 +2,47 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { LocalStorage } from 'quasar';
 
-import { api, normalizeBaseUrl } from 'src/api/http';
 import { SERVER_BASE_URL_STORAGE_KEY } from 'src/config/server';
 
+function normalizeBackendUrl(raw: string): string {
+  const s = raw.trim();
+  if (!s) return '';
+  return s.replace(/\/+$/, '');
+}
+
 export const useServerSettingsStore = defineStore('serverSettings', () => {
+  const settingsDialogOpen = ref(false);
+  const settingsUrlInvalid = ref(false);
+  /** Редактируемое значение в диалоге; в `baseUrl` попадает только после «Сохранить». */
+  const dialogDraftBaseUrl = ref('');
+
   const baseUrl = ref(
-    normalizeBaseUrl(
-      LocalStorage.getItem<string>(SERVER_BASE_URL_STORAGE_KEY) ?? '',
+    normalizeBackendUrl(
+      LocalStorage.getItem<string>(SERVER_BASE_URL_STORAGE_KEY) ?? import.meta.env.VITE_FRAPPE_URL,
     ),
   );
 
-  const settingsDialogOpen = ref(false);
-  const settingsDraftUrl = ref('');
-  const settingsUrlInvalid = ref(false);
-
-  function applyToAxios() {
-    api.defaults.baseURL = baseUrl.value || '';
+  function isCorrectUrl(url: string): boolean {
+    const s = url.trim();
+    if (!s) return false;
+    try {
+      const u = new URL(s);
+      if (u.protocol !== 'http:' && u.protocol !== 'https:') return false;
+      return u.hostname.length > 0;
+    } catch {
+      return false;
+    }
   }
 
   function setBaseUrl(raw: string) {
-    const n = normalizeBaseUrl(raw);
+    const n = normalizeBackendUrl(raw);
     baseUrl.value = n;
-    if (n) {
-      LocalStorage.set(SERVER_BASE_URL_STORAGE_KEY, n);
-    } else {
-      LocalStorage.remove(SERVER_BASE_URL_STORAGE_KEY);
-    }
-    applyToAxios();
-  }
-
-  function hydrateFromStorage() {
-    const v = LocalStorage.getItem<string>(SERVER_BASE_URL_STORAGE_KEY) ?? '';
-    baseUrl.value = normalizeBaseUrl(v);
-    applyToAxios();
+    LocalStorage.set(SERVER_BASE_URL_STORAGE_KEY, n);
   }
 
   function openSettingsDialog() {
-    settingsDraftUrl.value = baseUrl.value;
     settingsUrlInvalid.value = false;
+    dialogDraftBaseUrl.value = baseUrl.value;
     settingsDialogOpen.value = true;
   }
 
@@ -49,37 +52,24 @@ export const useServerSettingsStore = defineStore('serverSettings', () => {
   }
 
   function saveSettingsFromDialog() {
-    settingsUrlInvalid.value = false;
-    const raw = settingsDraftUrl.value.trim();
-    if (!raw) {
-      setBaseUrl('');
-      closeSettingsDialog();
-      return;
-    }
-    try {
-      const u = new URL(raw);
-      if (u.protocol !== 'http:' && u.protocol !== 'https:') {
-        settingsUrlInvalid.value = true;
-        return;
-      }
-    } catch {
+    const n = normalizeBackendUrl(dialogDraftBaseUrl.value);
+    if (!isCorrectUrl(n)) {
       settingsUrlInvalid.value = true;
       return;
     }
-    setBaseUrl(raw);
+    setBaseUrl(n);
     closeSettingsDialog();
   }
 
   return {
     baseUrl,
+    dialogDraftBaseUrl,
     settingsDialogOpen,
-    settingsDraftUrl,
     settingsUrlInvalid,
     setBaseUrl,
-    hydrateFromStorage,
-    applyToAxios,
     openSettingsDialog,
     closeSettingsDialog,
     saveSettingsFromDialog,
+    normalizeBaseUrl: normalizeBackendUrl,
   };
 });

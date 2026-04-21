@@ -206,7 +206,7 @@ import { useI18n } from 'vue-i18n';
 
 import RpNumericTouchpad from 'src/components/common/RpNumericTouchpad.vue';
 import { useRpKeyboard } from 'src/components/common/keyboard-inject';
-import { fetchSessionToken } from 'src/api/authToken';
+import { getFrappeApp } from 'src/api/frappeClient/backendClient';
 import { DEMO_PAIRING_LOGIN, DEMO_PAIRING_PASSWORD } from 'src/constants/demoPairingAccount';
 import { TOKEN_QR_TTL_MS, buildEncryptedQrPayload } from 'src/utils/pinQrCrypto';
 
@@ -336,11 +336,20 @@ function onFieldBlur() {
 async function onFetchToken() {
   loading.value = true;
   try {
-    const token = await fetchSessionToken(
-      credentialLogin.value.trim(),
-      credentialPassword.value,
-    );
-    sessionToken.value = token;
+    const frappe = getFrappeApp();
+    if (!frappe) {
+      $q.notify({
+        type: 'negative',
+        message: t('login.tokenFetchError'),
+        position: 'top',
+      });
+      return;
+    }
+    await frappe.auth().loginWithUsernamePassword({
+      username: credentialLogin.value.trim(),
+      password: credentialPassword.value,
+    });
+    sessionToken.value = await frappe.auth().getLoggedInUser();
     pin.value = '';
     step.value = 2;
   } catch (e) {
