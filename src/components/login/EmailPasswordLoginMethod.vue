@@ -55,7 +55,6 @@
         class="rp-sign-in-btn full-width q-mt-md"
         :label="t('login.signIn')"
         type="submit"
-        @click="onSubmit"
       />
     </q-form>
 

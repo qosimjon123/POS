@@ -1,7 +1,7 @@
 import { getFrappeCall } from 'src/api/frappeClient/backendClient';
 
 /** Проверка доступности Frappe (`frappe.ping`). */
-export async function checkConnection(): Promise<boolean> {
+export async function pingServer(): Promise<boolean> {
   const call = getFrappeCall();
   if (!call) {
     return false;

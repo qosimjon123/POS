@@ -4,5 +4,5 @@ import { useConnectionStore } from 'src/stores/connection';
 
 export default defineBoot(() => {
   const connectionStore = useConnectionStore();
-  connectionStore.startMonitoring();
+  connectionStore.startPingTimeout();
 });
