@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import { LocalStorage } from 'quasar';
 
 import { SERVER_BASE_URL_STORAGE_KEY } from 'src/config/server';
+import { useConnectionStore } from './connection';
 
 function normalizeBackendUrl(raw: string): string {
   const s = raw.trim();
@@ -51,13 +52,15 @@ export const useServerSettingsStore = defineStore('serverSettings', () => {
     settingsUrlInvalid.value = false;
   }
 
-  function saveSettingsFromDialog() {
+  async function saveSettingsFromDialog() {
     const n = normalizeBackendUrl(dialogDraftBaseUrl.value);
     if (!isCorrectUrl(n)) {
       settingsUrlInvalid.value = true;
       return;
     }
+    // Сначала новый URL в сторе — иначе `checkConnection` ходит на старый `baseUrl`.
     setBaseUrl(n);
+    await useConnectionStore().refreshConnection();
     closeSettingsDialog();
   }
 

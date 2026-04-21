@@ -1,48 +1,47 @@
 import { defineStore } from 'pinia';
-import { computed, ref } from 'vue';
+import { ref } from 'vue';
 
 import { checkConnection } from 'src/api/connectionCheck';
 
+/** Период опроса `frappe.ping`: только статус сервера, не «есть ли сеть у клиента». */
+const DEFAULT_PING_MS = 30_000;
+
 export const useConnectionStore = defineStore('connection', () => {
-  /** Сеть браузера (`navigator.onLine`). */
-  const online = ref(typeof navigator !== 'undefined' ? navigator.onLine : true);
+  /** `true` / `false` — ответ сервера; `null` — ещё не проверяли или идёт первая проверка. */
+  const serverConnected = ref<boolean | null>(null);
 
-  /** Frappe ответил на `frappe.ping`; `null` — ещё не проверяли. */
-  const frappeReachable = ref<boolean | null>(null);
+  let intervalId: ReturnType<typeof setInterval> | null = null;
 
-  async function refreshFrappePing() {
-    if (!online.value) {
-      frappeReachable.value = false;
-      return;
+  async function refreshConnection() {
+    serverConnected.value = await checkConnection();
+  }
+
+  /**
+   * Мониторинг только доступности Frappe (HTTP ping).
+   * Чтобы быстрее заметить падение сервера — уменьшите `pingIntervalMs` или подключите Socket.IO.
+   */
+  function startMonitoring(options?: { pingIntervalMs?: number }) {
+    stopMonitoring();
+    const pingIntervalMs = options?.pingIntervalMs ?? DEFAULT_PING_MS;
+
+    void refreshConnection();
+
+    intervalId = setInterval(() => {
+      void refreshConnection();
+    }, pingIntervalMs);
+  }
+
+  function stopMonitoring() {
+    if (intervalId !== null) {
+      clearInterval(intervalId);
+      intervalId = null;
     }
-    frappeReachable.value = await checkConnection();
   }
-
-  function syncFromNavigator() {
-    online.value = navigator.onLine;
-    void refreshFrappePing();
-  }
-
-  function bindWindowEvents() {
-    window.addEventListener('online', syncFromNavigator);
-    window.addEventListener('offline', syncFromNavigator);
-  }
-
-  function unbindWindowEvents() {
-    window.removeEventListener('online', syncFromNavigator);
-    window.removeEventListener('offline', syncFromNavigator);
-  }
-
-  /** Онлайн в браузере и успешный `frappe.ping`. */
-  const serverConnected = computed(() => online.value && frappeReachable.value === true);
 
   return {
-    online,
-    frappeReachable,
     serverConnected,
-    refreshFrappePing,
-    syncFromNavigator,
-    bindWindowEvents,
-    unbindWindowEvents,
+    refreshConnection,
+    startMonitoring,
+    stopMonitoring,
   };
 });

@@ -14,6 +14,7 @@ export default {
     next: 'Оянда',
     connected: 'Пайваст ҳаст',
     disconnected: 'Пайваст нест',
+    serverChecking: 'Санҷиши сервер…',
     useLightTheme: 'Мавзӯи равшан',
     useDarkTheme: 'Мавзӯи торик',
   },

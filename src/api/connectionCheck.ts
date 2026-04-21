@@ -10,6 +10,6 @@ export async function checkConnection(): Promise<boolean> {
     await call.get('frappe.ping');
     return true;
   } catch {
-    return true;
+    return false;
   }
 }

@@ -13,6 +13,7 @@ export default {
     next: 'Далее',
     connected: 'Соединение есть',
     disconnected: 'Нет соединения',
+    serverChecking: 'Проверка сервера…',
     useLightTheme: 'Светлая тема',
     useDarkTheme: 'Тёмная тема',
   },
