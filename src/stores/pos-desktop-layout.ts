@@ -2,7 +2,10 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { LocalStorage } from 'quasar';
 
-const STORAGE_KEY = 'rp-pos-desktop-layout';
+import { STORAGE_KEYS } from 'src/config/storage';
+import { readJsonStorage, writeJsonStorage } from 'src/utils/storage';
+
+const STORAGE_KEY = STORAGE_KEYS.POS_DESKTOP_LAYOUT;
 
 /** Полоска между колонками (px), учитывается в расчёте центра. */
 export const POS_DESKTOP_SPLITTER_PX = 8;
@@ -25,6 +28,15 @@ export interface PosDesktopWidthsPayload {
   rightWidthPx: number;
 }
 
+function isPosDesktopWidthsPayload(v: unknown): v is PosDesktopWidthsPayload {
+  return (
+    typeof v === 'object' &&
+    v !== null &&
+    typeof (v as PosDesktopWidthsPayload).cartWidthPx === 'number' &&
+    typeof (v as PosDesktopWidthsPayload).rightWidthPx === 'number'
+  );
+}
+
 function isDesktopBreakpoint(): boolean {
   return typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches;
 }
@@ -45,7 +57,7 @@ function maxRightPx(bodyWidthPx: number): number {
   return Math.max(0, Math.floor(bodyWidthPx * POS_DESKTOP_MAX_RIGHT_RATIO));
 }
 
-export const usePosDesktopLayoutStore = defineStore('posDesktopLayout', () => {
+export const usePosDesktopLayoutStore = defineStore('pos-desktop-layout', () => {
   const cartWidthPx = ref(POS_DESKTOP_DEFAULT_CART_PX);
   const rightWidthPx = ref(POS_DESKTOP_DEFAULT_RIGHT_PX);
 
@@ -119,25 +131,10 @@ export const usePosDesktopLayoutStore = defineStore('posDesktopLayout', () => {
 
   function hydrateFromStorage() {
     if (!isDesktopBreakpoint()) return;
-    const raw = LocalStorage.getItem(STORAGE_KEY);
-    if (typeof raw !== 'string' || !raw) return;
-    try {
-      const parsed = JSON.parse(raw) as unknown;
-      if (
-        parsed &&
-        typeof parsed === 'object' &&
-        'cartWidthPx' in parsed &&
-        'rightWidthPx' in parsed
-      ) {
-        const p = parsed as PosDesktopWidthsPayload;
-        if (typeof p.cartWidthPx === 'number' && typeof p.rightWidthPx === 'number') {
-          cartWidthPx.value = p.cartWidthPx;
-          rightWidthPx.value = p.rightWidthPx;
-        }
-      }
-    } catch {
-      /* ignore */
-    }
+    const parsed = readJsonStorage(STORAGE_KEY, isPosDesktopWidthsPayload);
+    if (!parsed) return;
+    cartWidthPx.value = parsed.cartWidthPx;
+    rightWidthPx.value = parsed.rightWidthPx;
   }
 
   function persist() {
@@ -146,7 +143,7 @@ export const usePosDesktopLayoutStore = defineStore('posDesktopLayout', () => {
       cartWidthPx: cartWidthPx.value,
       rightWidthPx: rightWidthPx.value,
     };
-    LocalStorage.set(STORAGE_KEY, JSON.stringify(payload));
+    writeJsonStorage(STORAGE_KEY, payload);
   }
 
   /** Дефолт: 30% + 30% + 40% (центр), при наличии ширины body. */

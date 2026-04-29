@@ -11,7 +11,7 @@ function normalizeBackendUrl(raw: string): string {
   return s.replace(/\/+$/, '');
 }
 
-export const useServerSettingsStore = defineStore('serverSettings', () => {
+export const useServerSettingsStore = defineStore('server-settings', () => {
   const settingsDialogOpen = ref(false);
   const settingsUrlInvalid = ref(false);
   /** Редактируемое значение в диалоге; в `baseUrl` попадает только после «Сохранить». */

@@ -38,20 +38,15 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import { useQuasar } from 'quasar';
 import { useI18n } from 'vue-i18n';
 
-import type { MessageLanguages } from 'src/i18n';
+import { SUPPORTED_LOCALES } from 'src/i18n';
 import { useLocaleStore } from 'src/stores/locale';
 
-const $q = useQuasar();
 const { t } = useI18n({ useScope: 'global' });
 const localeStore = useLocaleStore();
 
-const localeOptions: { value: MessageLanguages; label: string }[] = [
-  { value: 'ru-RU', label: 'RU' },
-  { value: 'tg-TJ', label: 'TJ' },
-];
+const localeOptions = SUPPORTED_LOCALES;
 
 const currentShort = computed(() =>
   localeStore.locale === 'tg-TJ' ? 'TJ' : 'RU',

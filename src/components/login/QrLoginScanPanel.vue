@@ -114,7 +114,7 @@ onUnmounted(() => {
 });
 
 async function onStartScan() {
-  await scanner.startScan(videoRef.value ?? null);
+  await scanner.startScan(videoRef.value ?? null, undefined, 'login');
 }
 
 function onStopScan() {
@@ -132,7 +132,7 @@ async function onFileChange(ev: Event) {
   if (!file) return;
   fileBusy.value = true;
   try {
-    await scanner.scanFromFile(file);
+    await scanner.scanFromFile(file, undefined, 'login');
   } finally {
     fileBusy.value = false;
   }

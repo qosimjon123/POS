@@ -1,0 +1,14 @@
+---
+description: RestroPOS architecture and refactor conventions
+alwaysApply: true
+---
+
+# RestroPOS Architecture
+
+- Preserve the current stack: Quasar, Vue 3, Pinia setup stores, vue-i18n, Capacitor scanner, and frappe-js-sdk.
+- Prefer feature modules for domain code. Keep low-level scanner code under `src/modules/scanner`; place new POS domain code under `src/modules/pos`.
+- Keep Pinia stores thin: UI state, orchestration, and derived view-models belong there; demo data, pure calculations, API calls, and persistence helpers should live in modules, services, fixtures, or config.
+- Use `src/api` for transport and typed backend services. Do not call Frappe methods directly from components.
+- Treat `src/stores/theme.ts` and `src/stores/locale.ts` as the public app API for theme and language.
+- Put shared route policy in router meta and guards instead of scattering access checks through pages.
+- Add tests for pure business functions before or during risky refactors.

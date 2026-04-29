@@ -145,7 +145,7 @@ function onVirtualScroll(details: {
 function onScan() {
   const fromHeader = scanner.defaultWebScanVideo;
   const el = (fromHeader ?? scanVideoRef.value) ?? null;
-  void scanner.startScan(el);
+  void scanner.startScan(el, undefined, 'customer');
 }
 
 function onStopScan() {
@@ -156,7 +156,7 @@ watch(
   () => scanner.lastResult,
   (r) => {
     if (!r?.value) return;
-    if (scanner.isNextScanForCustomerCreateCard()) return;
+    if (scanner.lastIntent !== 'customer') return;
     const v = r.value.trim().toLowerCase();
     const found =
       MOCK.find(

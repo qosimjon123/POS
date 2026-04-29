@@ -307,7 +307,7 @@ watch(
   () => scanner.lastResult,
   (r) => {
     if (!r?.value) return;
-    if (scanner.isNextScanForCustomerCreateCard()) return;
+    if (scanner.lastIntent !== 'catalog') return;
     search.value = r.value;
   },
 );
@@ -328,7 +328,7 @@ function onSearchBlur() {
 }
 
 function onScanClick() {
-  void scanner.startScan(scanVideoRef.value ?? null);
+  void scanner.startScan(scanVideoRef.value ?? null, undefined, 'catalog');
 }
 
 function onStopScan() {

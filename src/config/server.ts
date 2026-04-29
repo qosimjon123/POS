@@ -1,2 +1,4 @@
 /** Ключ LocalStorage для URL API/Frappe, который вводит пользователь (настройки сервера). */
-export const SERVER_BASE_URL_STORAGE_KEY = 'rp-server-base-url';
+import { STORAGE_KEYS } from './storage';
+
+export const SERVER_BASE_URL_STORAGE_KEY = STORAGE_KEYS.SERVER_BASE_URL;

@@ -20,6 +20,8 @@ import {
 import { readBarcodeFromImageFile } from 'src/modules/scanner/read-from-file';
 import type { UnifiedScanResult } from 'src/modules/scanner/types';
 
+export type ScannerIntent = 'login' | 'catalog' | 'customer' | 'customerCreate';
+
 type ScannerNotifyOpts = QNotifyCreateOptions & {
   /** Tap banner to dismiss (off when you pass custom `actions`, e.g. «Настройки»). */
   dismissOnBannerClick?: boolean;
@@ -98,6 +100,7 @@ export const useScannerStore = defineStore('scanner', () => {
   const supported = ref(false);
   const scanning = ref(false);
   const lastResult = ref<UnifiedScanResult | null>(null);
+  const lastIntent = ref<ScannerIntent | null>(null);
   const errorMessage = ref<string | null>(null);
   let stopSession: (() => Promise<void>) | null = null;
 
@@ -105,12 +108,6 @@ export const useScannerStore = defineStore('scanner', () => {
   const defaultWebScanVideo = shallowRef<HTMLVideoElement | null>(null);
   /** Какой `<video>` сейчас получает stream (чтобы не показывать два полноэкранных превью). */
   const webPreviewVideoTarget = shallowRef<HTMLVideoElement | null>(null);
-
-  /**
-   * Следующий результат скана ввести в поле карты формы создания клиента
-   * (не в поиск товаров и не в выбор клиента).
-   */
-  const nextScanForCustomerCreateCard = ref(false);
 
   const needsVideoPreview = computed(
     () => !Capacitor.isNativePlatform() && scanning.value,
@@ -120,16 +117,9 @@ export const useScannerStore = defineStore('scanner', () => {
     defaultWebScanVideo.value = el;
   }
 
-  function armNextScanForCustomerCreateCard() {
-    nextScanForCustomerCreateCard.value = true;
-  }
-
-  function isNextScanForCustomerCreateCard(): boolean {
-    return nextScanForCustomerCreateCard.value;
-  }
-
-  function disarmNextScanForCustomerCreateCard() {
-    nextScanForCustomerCreateCard.value = false;
+  function setResult(result: UnifiedScanResult, intent: ScannerIntent | null) {
+    lastIntent.value = intent;
+    lastResult.value = result;
   }
 
   async function init() {
@@ -149,6 +139,7 @@ export const useScannerStore = defineStore('scanner', () => {
   async function startScan(
     videoElement?: HTMLVideoElement | null,
     runtimeOverride?: Partial<ScannerRuntimeOptions>,
+    intent: ScannerIntent = 'catalog',
   ) {
     if (!Capacitor.isNativePlatform() && scanning.value && stopSession) {
       await stopSession();
@@ -156,6 +147,7 @@ export const useScannerStore = defineStore('scanner', () => {
     }
 
     lastResult.value = null;
+    lastIntent.value = intent;
     errorMessage.value = null;
     scanning.value = true;
 
@@ -184,7 +176,7 @@ export const useScannerStore = defineStore('scanner', () => {
         }
 
         const result = await runNativeGoogleScan(runtime);
-        if (result) lastResult.value = result;
+        if (result) setResult(result, intent);
         return;
       }
 
@@ -214,7 +206,7 @@ export const useScannerStore = defineStore('scanner', () => {
           ...(runtimeOverride ? { runtime: runtimeOverride } : {}),
           videoElement: resolved,
           onResult: (r) => {
-            lastResult.value = r;
+            setResult(r, intent);
           },
           onError: () => {
             errorMessage.value = i18n.global.t('scanner.unexpectedError');
@@ -255,22 +247,23 @@ export const useScannerStore = defineStore('scanner', () => {
     }
     scanning.value = false;
     webPreviewVideoTarget.value = null;
-    disarmNextScanForCustomerCreateCard();
   }
 
   function clearLastResult() {
     lastResult.value = null;
+    lastIntent.value = null;
   }
 
   async function scanFromFile(
     file: File,
     runtimeOverride?: Partial<ScannerRuntimeOptions>,
+    intent: ScannerIntent = 'login',
   ) {
     errorMessage.value = null;
     try {
       const result = await readBarcodeFromImageFile(file, runtimeOverride);
       if (result) {
-        lastResult.value = result;
+        setResult(result, intent);
       } else {
         errorMessage.value = i18n.global.t('scanner.fileNoBarcode');
       }
@@ -283,6 +276,7 @@ export const useScannerStore = defineStore('scanner', () => {
     supported,
     scanning,
     lastResult,
+    lastIntent,
     errorMessage,
     needsVideoPreview,
     defaultWebScanVideo,
@@ -293,8 +287,5 @@ export const useScannerStore = defineStore('scanner', () => {
     clearLastResult,
     scanFromFile,
     setDefaultWebScanVideo,
-    armNextScanForCustomerCreateCard,
-    isNextScanForCustomerCreateCard,
-    disarmNextScanForCustomerCreateCard,
   };
 });

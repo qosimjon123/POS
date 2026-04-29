@@ -102,10 +102,11 @@ import type {
   KeyboardPosition,
   KeyboardTypeProp,
 } from 'src/components/common/keyboard-types';
+import { STORAGE_KEYS } from 'src/config/storage';
 import { shouldUseVirtualKeyboard } from 'src/utils/virtualKeyboard';
 
-const KB_PANEL_POS_KEY = 'rp-kb-panel-pos';
-const KB_TOGGLE_POS_KEY = 'rp-kb-toggle-pos';
+const KB_PANEL_POS_KEY = STORAGE_KEYS.KEYBOARD_PANEL_POS;
+const KB_TOGGLE_POS_KEY = STORAGE_KEYS.KEYBOARD_TOGGLE_POS;
 
 type KbPos = { left: number; top: number };
 

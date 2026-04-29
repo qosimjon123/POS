@@ -3,11 +3,10 @@ import QRCode from 'qrcode';
 import { computed, ref } from 'vue';
 import { Dark, Notify } from 'quasar';
 
-import { getFrappeCall } from 'src/api/frappeClient/backendClient';
+import { requestTokenPairingQr } from 'src/api/login/tokenPairingClient';
 import { i18n } from 'src/i18n';
 
 const PIN_RE = /^\d{6}$/;
-const GET_QR = 'fadl_pos.api.login.login_with_qr.get_qr_data';
 const TTL_MS = 5 * 60 * 1000;
 
 function t(key: string) {
@@ -72,7 +71,7 @@ function notifyBuildQrCatch(err: unknown) {
   });
 }
 
-export const useTokenPairingStore = defineStore('tokenPairing', () => {
+export const useTokenPairingStore = defineStore('token-pairing', () => {
   const step = ref<1 | 2 | 3>(1);
   const qrLoading = ref(false);
   const credentialLogin = ref('');
@@ -153,22 +152,16 @@ export const useTokenPairingStore = defineStore('tokenPairing', () => {
 
   async function buildQr() {
     if (!PIN_RE.test(pin.value)) return;
-    const call = getFrappeCall();
-    if (!call) {
-      Notify.create({ type: 'negative', message: t('login.tokenQrBuildError'), position: 'top' });
-      return;
-    }
     qrLoading.value = true;
     try {
-      const res = await call.post(GET_QR, {
+      const blob = await requestTokenPairingQr({
         login: credentialLogin.value.trim(),
         password: credentialPassword.value,
         pin_code: pin.value,
       });
-      const blob = res?.message?.encrypted_blob ?? res?.encrypted_blob;
       if (!blob) throw new Error('no encrypted_blob');
 
-      qrDataUrl.value = await QRCode.toDataURL(String(blob), {
+      qrDataUrl.value = await QRCode.toDataURL(blob, {
         width: 280,
         margin: 2,
         errorCorrectionLevel: 'M',

@@ -156,7 +156,7 @@ async function onDialogShow() {
 
 function onDialogHide() {
   dragY.value = 0;
-  scanner.disarmNextScanForCustomerCreateCard();
+  scanner.clearLastResult();
 }
 
 function onSave(payload: PosCustomerCreatePayload) {

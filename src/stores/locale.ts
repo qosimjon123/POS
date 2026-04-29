@@ -1,13 +1,30 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { LocalStorage } from 'quasar';
-import type { Composer } from 'vue-i18n';
 
 import { LOCALE_STORAGE_KEY } from 'src/config/locale';
-import { i18n, type MessageLanguages } from 'src/i18n';
+import { i18n, isMessageLanguage, type MessageLanguages } from 'src/i18n';
+
+type I18nLocaleTarget = {
+  locale: MessageLanguages | { value: MessageLanguages };
+};
+
+function localeTarget(): I18nLocaleTarget {
+  return i18n.global as unknown as I18nLocaleTarget;
+}
+
+function getAppliedLocale(): MessageLanguages {
+  const target = localeTarget().locale;
+  return typeof target === 'string' ? target : target.value;
+}
 
 function applyLocale(code: MessageLanguages) {
-  (i18n.global as unknown as Composer).locale.value = code;
+  const target = localeTarget();
+  if (typeof target.locale === 'string') {
+    target.locale = code;
+    return;
+  }
+  target.locale.value = code;
 }
 
 export const useLocaleStore = defineStore('locale', () => {
@@ -15,12 +32,11 @@ export const useLocaleStore = defineStore('locale', () => {
 
   function hydrateFromStorage() {
     const saved = LocalStorage.getItem<string>(LOCALE_STORAGE_KEY);
-    if (saved === 'tg-TJ' || saved === 'ru-RU') {
+    if (saved && isMessageLanguage(saved)) {
       locale.value = saved;
       applyLocale(saved);
     } else {
-      locale.value = (i18n.global as unknown as Composer).locale
-        .value as MessageLanguages;
+      locale.value = getAppliedLocale();
     }
   }
 

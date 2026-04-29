@@ -11,6 +11,20 @@ export const messages = {
 export type MessageLanguages = keyof typeof messages;
 export type MessageSchema = (typeof messages)['ru-RU'];
 
+export interface LocaleOption {
+  value: MessageLanguages;
+  label: string;
+}
+
+export const SUPPORTED_LOCALES: LocaleOption[] = [
+  { value: 'ru-RU', label: 'RU' },
+  { value: 'tg-TJ', label: 'TJ' },
+];
+
+export function isMessageLanguage(value: string): value is MessageLanguages {
+  return value in messages;
+}
+
 export const i18n = createI18n<{ message: MessageSchema }, MessageLanguages>({
   locale: 'ru-RU',
   legacy: false,

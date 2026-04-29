@@ -5,6 +5,8 @@ import {
 } from '@capacitor-mlkit/barcode-scanning';
 import type { BarcodeFormat as WebBarcodeFormat } from 'barcode-detector';
 
+import { STORAGE_KEYS } from './storage';
+
 /**
  * Single place for barcode scanner defaults and storage keys.
  * Import `mergeScannerRuntime()` when you need overrides (e.g. per-screen formats).
@@ -12,7 +14,7 @@ import type { BarcodeFormat as WebBarcodeFormat } from 'barcode-detector';
 
 export const SCANNER_STORAGE_KEYS = {
   /** Reserved: persisted JSON overrides for {@link ScannerRuntimeOptions} */
-  RUNTIME_PREFS: 'rp_scanner_runtime',
+  RUNTIME_PREFS: STORAGE_KEYS.SCANNER_RUNTIME_PREFS,
 } as const;
 
 /** All formats supported by ML Kit on native (scan / listeners). */

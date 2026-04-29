@@ -165,10 +165,9 @@ watch(
 );
 
 function onScanCard() {
-  scanner.armNextScanForCustomerCreateCard();
   const fromHeader = scanner.defaultWebScanVideo;
   const el = (fromHeader ?? scanVideoRef.value) ?? null;
-  void scanner.startScan(el);
+  void scanner.startScan(el, undefined, 'customerCreate');
 }
 
 function onStopScan() {
@@ -179,9 +178,8 @@ watch(
   () => scanner.lastResult,
   (r) => {
     if (!r?.value) return;
-    if (!scanner.isNextScanForCustomerCreateCard()) return;
+    if (scanner.lastIntent !== 'customerCreate') return;
     card_number.value = r.value.trim();
-    scanner.disarmNextScanForCustomerCreateCard();
     scanner.clearLastResult();
   },
 );
@@ -202,7 +200,6 @@ function reset() {
   mobile_no.value = '';
   email.value = '';
   card_number.value = '';
-  scanner.disarmNextScanForCustomerCreateCard();
 }
 
 defineExpose({ reset, submit, canSubmit });
@@ -212,7 +209,6 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-  scanner.disarmNextScanForCustomerCreateCard();
   void scanner.stopScan();
 });
 </script>

@@ -1,16 +1,6 @@
 <template>
   <q-page class="rp-login-page column no-wrap">
-    <header class="rp-login-toolbar row items-center justify-between">
-      <div class="row items-center rp-toolbar-gap">
-        <LanguageSelector />
-        <ThemeToggle />
-        <SettingsButton @click="login.logoutFrappe" />
-      </div>
-      <div class="row items-center rp-toolbar-gap">
-        <ConnectionStatus />
-        <TimeDisplay />
-      </div>
-    </header>
+    <AppChromeToolbar />
 
     <main class="rp-login-main col flex flex-center">
       <div class="rp-login-wrap column">
@@ -57,11 +47,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
 
-import ConnectionStatus from 'src/components/system/ConnectionStatus.vue';
-import LanguageSelector from 'src/components/system/LanguageSelector.vue';
-import SettingsButton from 'src/components/system/SettingsButton.vue';
-import ThemeToggle from 'src/components/system/ThemeToggle.vue';
-import TimeDisplay from 'src/components/system/TimeDisplay.vue';
+import AppChromeToolbar from 'src/components/system/AppChromeToolbar.vue';
 import RpKeyboard from 'src/components/common/RpKeyboard.vue';
 import EmailPasswordLoginMethod from 'src/components/login/EmailPasswordLoginMethod.vue';
 import QrLoginMethod from 'src/components/login/QrLoginMethod.vue';
@@ -77,19 +63,6 @@ const login = useLoginStore();
   min-height: 100%;
   background: var(--rp-background);
   color: var(--rp-foreground);
-}
-
-.rp-login-toolbar {
-  box-sizing: border-box;
-  width: 100%;
-  padding-top: max(24px, var(--rp-safe-inset-top));
-  padding-right: max(48px, var(--rp-safe-inset-right));
-  padding-bottom: 24px;
-  padding-left: max(48px, var(--rp-safe-inset-left));
-}
-
-.rp-toolbar-gap {
-  gap: 12px;
 }
 
 .rp-login-main {
@@ -148,15 +121,6 @@ const login = useLoginStore();
 }
 
 @media (max-width: 599px) {
-  .rp-login-toolbar {
-    padding-top: max(16px, var(--rp-safe-inset-top));
-    padding-right: max(16px, var(--rp-safe-inset-right));
-    padding-bottom: 16px;
-    padding-left: max(16px, var(--rp-safe-inset-left));
-    flex-wrap: wrap;
-    gap: 12px;
-  }
-
   .rp-login-main {
     padding-top: 16px;
     padding-right: max(16px, var(--rp-safe-inset-right));

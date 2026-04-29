@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 
 import { pingServer } from 'src/api/pingServer';
+import { createSingleFlight } from 'src/utils/singleFlight';
 
 /** Период опроса `frappe.ping`: только статус сервера, не «есть ли сеть у клиента». */
 const DEFAULT_PING_MS = 2_000;
@@ -19,21 +20,16 @@ export const useConnectionStore = defineStore('connection', () => {
   let intervalId: ReturnType<typeof setInterval> | null = null;
 
   /** Параллельные вызовы (сохранение URL + тик интервала) делят один `ping`. */
-  let refreshInFlight: Promise<void> | null = null;
+  const refreshConnectionFlight = createSingleFlight<void>();
 
   async function refreshConnection() {
-    if (!refreshInFlight) {
-      refreshInFlight = (async () => {
-        const ok = await pingServer();
-        serverConnected.value = ok;
-        if (ok) {
-          stopPingTimeout();
-        }
-      })().finally(() => {
-        refreshInFlight = null;
-      });
-    }
-    await refreshInFlight;
+    await refreshConnectionFlight.run(async () => {
+      const ok = await pingServer();
+      serverConnected.value = ok;
+      if (ok) {
+        stopPingTimeout();
+      }
+    });
   }
 
   /** Снять периодический опрос; «таймер» в выключенном состоянии. */

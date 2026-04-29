@@ -1,16 +1,6 @@
 <template>
   <q-page class="rp-register-select-page column no-wrap">
-    <header class="rp-register-toolbar row items-center justify-between">
-      <div class="row items-center rp-toolbar-gap">
-        <LanguageSelector />
-        <ThemeToggle />
-        <SettingsButton />
-      </div>
-      <div class="row items-center rp-toolbar-gap">
-        <ConnectionStatus />
-        <TimeDisplay />
-      </div>
-    </header>
+    <AppChromeToolbar />
 
     <main class="rp-register-main col">
       <div class="rp-register-inner column">
@@ -38,7 +28,7 @@
               <template v-if="item.available">
                 <q-avatar
                   rounded
-                  :color="$q.dark.isActive ? 'grey-9' : 'grey-3'"
+                  :color="themeStore.dark ? 'grey-9' : 'grey-3'"
                   text-color="primary"
                   icon="point_of_sale"
                 />
@@ -122,23 +112,20 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import { useQuasar } from 'quasar';
 import { useI18n } from 'vue-i18n';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 
 import RegisterOpenDialog from 'src/components/register/RegisterOpenDialog.vue';
-import ConnectionStatus from 'src/components/system/ConnectionStatus.vue';
-import LanguageSelector from 'src/components/system/LanguageSelector.vue';
-import SettingsButton from 'src/components/system/SettingsButton.vue';
-import ThemeToggle from 'src/components/system/ThemeToggle.vue';
-import TimeDisplay from 'src/components/system/TimeDisplay.vue';
+import AppChromeToolbar from 'src/components/system/AppChromeToolbar.vue';
 import type { PosRegister } from 'src/stores/register-context';
 import { useRegisterContextStore } from 'src/stores/register-context';
+import { useThemeStore } from 'src/stores/theme';
 
-const $q = useQuasar();
 const { t, locale } = useI18n();
+const route = useRoute();
 const router = useRouter();
 const registerStore = useRegisterContextStore();
+const themeStore = useThemeStore();
 
 const openRegisterDialog = ref(false);
 const pendingRegister = ref<PosRegister | null>(null);
@@ -160,7 +147,7 @@ function onSelect(item: PosRegister) {
   }
   if (item.isOpen) {
     registerStore.selectRegister(item);
-    void router.push({ name: 'pos' });
+    void router.push(registerRedirectTarget());
     return;
   }
   pendingRegister.value = item;
@@ -178,7 +165,14 @@ function onConfirmOpenRegister() {
   }
   openRegisterDialog.value = false;
   pendingRegister.value = null;
-  void router.push({ name: 'pos' });
+  void router.push(registerRedirectTarget());
+}
+
+function registerRedirectTarget() {
+  const redirect = route.query.redirect;
+  return typeof redirect === 'string' && redirect.startsWith('/')
+    ? redirect
+    : { name: 'pos' };
 }
 </script>
 
@@ -187,20 +181,6 @@ function onConfirmOpenRegister() {
   min-height: 100%;
   background: var(--rp-background);
   color: var(--rp-foreground);
-}
-
-.rp-register-toolbar {
-  box-sizing: border-box;
-  width: 100%;
-  flex-shrink: 0;
-  padding-top: max(24px, var(--rp-safe-inset-top));
-  padding-right: max(48px, var(--rp-safe-inset-right));
-  padding-bottom: 24px;
-  padding-left: max(48px, var(--rp-safe-inset-left));
-}
-
-.rp-toolbar-gap {
-  gap: 12px;
 }
 
 .rp-register-main {

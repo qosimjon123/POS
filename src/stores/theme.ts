@@ -2,7 +2,9 @@ import { computed } from 'vue';
 import { defineStore } from 'pinia';
 import { Dark, LocalStorage } from 'quasar';
 
-const STORAGE_KEY = 'rp-theme-dark';
+import { STORAGE_KEYS } from 'src/config/storage';
+
+const STORAGE_KEY = STORAGE_KEYS.THEME_DARK;
 
 export const useThemeStore = defineStore('theme', () => {
   /** Mirrors Quasar Dark plugin (single source of truth). */
