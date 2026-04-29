@@ -40,22 +40,19 @@ import { storeToRefs } from 'pinia';
 import { ref, watch } from 'vue';
 import { useQuasar } from 'quasar';
 import { useI18n } from 'vue-i18n';
-import { useRouter } from 'vue-router';
 
 import RpNumericTouchpad from 'src/components/common/RpNumericTouchpad.vue';
 import { useLoginStore } from 'src/stores/login';
-import { tryDecryptPairingQr } from 'src/utils/pinQrCrypto';
 
 const { t } = useI18n();
 const $q = useQuasar();
-const router = useRouter();
 
 const login = useLoginStore();
 const { scanned, pin, qrPairingEnvelope } = storeToRefs(login);
 
 const verifying = ref(false);
 
-watch(pin, async (p) => {
+watch(pin, (p) => {
   if (p.length !== 6 || !scanned.value || verifying.value) return;
   const raw = qrPairingEnvelope.value;
   if (!raw) return;
@@ -70,22 +67,7 @@ watch(pin, async (p) => {
   }
 
   verifying.value = true;
-  try {
-    const res = await tryDecryptPairingQr(raw, p);
-    if (!res) {
-      $q.notify({
-        type: 'negative',
-        message: t('login.qrPinWrong'),
-        position: 'top',
-      });
-      pin.value = '';
-      return;
-    }
-    login.resetQrFlow();
-    void router.push({ name: 'register-select' });
-  } finally {
-    verifying.value = false;
-  }
+
 });
 </script>
 

@@ -24,7 +24,11 @@ export const useConnectionStore = defineStore('connection', () => {
   async function refreshConnection() {
     if (!refreshInFlight) {
       refreshInFlight = (async () => {
-        serverConnected.value = await pingServer();
+        const ok = await pingServer();
+        serverConnected.value = ok;
+        if (ok) {
+          stopPingTimeout();
+        }
       })().finally(() => {
         refreshInFlight = null;
       });
@@ -56,8 +60,8 @@ export const useConnectionStore = defineStore('connection', () => {
   }
 
   /**
-   * Любой ответ Frappe (включая `frappe.ping`): обновляет флаг.
-   * Успешный пинг не гасит интервал — иначе опрос сам себя отключит; любой другой успешный запрос — гасит.
+   * Ответы через общий клиент frappe-js-sdk (не через отдельный `pingServer`).
+   * Успешный статус гасит интервал опроса; при ошибке запускает его снова (если ещё не идёт).
    */
   function handleFrappeRequestStatus(status: number) {
     if (isFrappeReachableHttpStatus(status)) {

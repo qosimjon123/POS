@@ -1,47 +1,37 @@
 import { defineStore } from 'pinia';
-import { computed, ref } from 'vue';
-
-import { getFrappeApp, resetFrappeApp } from 'src/api/frappeClient/backendClient';
-import { getFrappeUrl } from 'src/config/frappe-url';
-import { useServerSettingsStore } from 'src/stores/server-settings';
+import { ref } from 'vue';
+import { getFrappeAuth, resetFrappeApp } from 'src/api/frappeClient/backendClient';
 
 export type LoginMode = 'qr' | 'email';
 
 export const useLoginStore = defineStore('login', () => {
-  const serverSettings = useServerSettingsStore();
-
   const mode = ref<LoginMode>('qr');
-
   /** Имя пользователя Frappe после успешного `loginWithFrappe` (cookie-сессия). */
   const frappeUser = ref<string | null>(null);
-
-  /** URL из настроек пользователя перекрывает `VITE_FRAPPE_URL`. */
-  const hasFrappeBackend = computed(() => !!getFrappeUrl(serverSettings.baseUrl));
 
   /**
    * Логин через Frappe `/api/method/login` (frappe-js-sdk).
    * Нужен URL: из настроек сервера или `VITE_FRAPPE_URL`; иначе метод ничего не делает.
    */
-  async function loginWithFrappe(username: string, password: string): Promise<void> {
-    const frappe = getFrappeApp();
+  async function loginWithPassword(username: string, password: string): Promise<void> {
+    await logoutFrappe();
+    resetFrappeApp();
+    const frappe = getFrappeAuth();
     if (!frappe) {
       return;
     }
-    const auth = frappe.auth();
-    await auth.loginWithUsernamePassword({ username: username.trim(), password });
-    const user = await auth.getLoggedInUser();
+    await frappe.loginWithUsernamePassword({ username: username.trim(), password });
+    const user = await frappe.getLoggedInUser();
     frappeUser.value = user;
   }
 
   async function logoutFrappe(): Promise<void> {
-    const frappe = getFrappeApp();
+    const frappe = getFrappeAuth();
     if (!frappe) {
-      frappeUser.value = null;
       return;
     }
-    await frappe.auth().logout();
+    await frappe.logout();
     frappeUser.value = null;
-    resetFrappeApp();
   }
 
   const scanned = ref(false);
@@ -88,8 +78,7 @@ export const useLoginStore = defineStore('login', () => {
   return {
     mode,
     frappeUser,
-    hasFrappeBackend,
-    loginWithFrappe,
+    loginWithPassword,
     logoutFrappe,
     scanned,
     qrPairingEnvelope,

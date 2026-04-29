@@ -43,9 +43,6 @@ import { useQuasar } from 'quasar';
 import { useI18n } from 'vue-i18n';
 
 import { useLoginStore } from 'src/stores/login';
-import { useScannerStore } from 'src/stores/scanner';
-import { isPairingQrEnvelope } from 'src/utils/pinQrCrypto';
-
 import QrLoginPinPanel from './QrLoginPinPanel.vue';
 import QrLoginScanPanel from './QrLoginScanPanel.vue';
 
@@ -55,27 +52,9 @@ const $q = useQuasar();
 /** Только телефон (< 600px); планшет и десктоп — прежняя вёрстка */
 const isMobile = computed(() => $q.screen.lt.sm);
 
-const scanner = useScannerStore();
 const login = useLoginStore();
 const { scanned, mobileStep } = storeToRefs(login);
 
-watch(
-  () => scanner.lastResult,
-  (r) => {
-    const raw = r?.value?.trim();
-    if (!raw) return;
-    if (isPairingQrEnvelope(raw)) {
-      login.setQrPairingEnvelope(raw);
-      login.setScanned(true);
-    } else {
-      $q.notify({
-        type: 'warning',
-        message: t('login.qrInvalidPayload'),
-        position: 'top',
-      });
-    }
-  },
-);
 
 watch([scanned, isMobile], () => {
   if (scanned.value && isMobile.value) {

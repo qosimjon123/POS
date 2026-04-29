@@ -58,6 +58,9 @@ export default {
     tokenSectionSubtitle:
       'Логин/парол ба сервер → калид (token). Ин калидро PIN-и 6-рақамаи шумо дар QR мепӯшонад (1 дақ). Дар воридшавии QR ҳамон QR ва PIN лозим.',
     tokenGetToken: 'Гирифтани токен',
+    tokenStep1Continue: 'Ба PIN пештар',
+    tokenStep1NetworkHint:
+      'Дархост ба сервер танҳо баъди PIN ва тугмаи «Нишон додани QR». Дар ин қадам маълумот фиристода намешавад.',
     tokenDemoHint:
       'Демо бе бэкенд: логин «{login}», парол «{password}». Бо API-и воқеӣ пинҳон мешавад.',
     tokenDemoFill: 'Гузоштани демо',
@@ -78,6 +81,8 @@ export default {
     tokenCryptoUnavailable:
       'Рамзгузорӣ дар ин муҳит нест (HTTPS ё localhost лозим).',
     tokenQrBuildError: 'QR сохта нашуд. Дубора кӯшиш кунед.',
+    tokenQrPermissionError:
+      'Метод дастрас нест: дар сервер whitelist (@frappe.whitelist) нест ё воридшавӣ лозим аст. Аз маъмури fadl_pos.api.login.login_with_qr.get_qr_data санҷед.',
   },
   tokenPairing: {
     pageTitle: 'Калид ва QR',

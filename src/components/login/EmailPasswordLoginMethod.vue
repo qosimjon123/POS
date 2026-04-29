@@ -111,9 +111,8 @@ function onFieldBlur() {
 async function onSubmit() {
   if (!email.value?.trim() || !password.value) return;
 
-  if (login.hasFrappeBackend) {
     try {
-      await login.loginWithFrappe(email.value, password.value);
+      await login.loginWithPassword(email.value, password.value);
     } catch (e: unknown) {
       let msg = t('login.signInFailed');
       if (axios.isAxiosError(e)) {
@@ -127,7 +126,6 @@ async function onSubmit() {
       $q.notify({ type: 'negative', message: msg });
       return;
     }
-  }
 
   void router.push({ name: 'register-select' });
 }

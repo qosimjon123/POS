@@ -4,7 +4,7 @@
       <div class="row items-center rp-toolbar-gap">
         <LanguageSelector />
         <ThemeToggle />
-        <SettingsButton />
+        <SettingsButton @click="login.logoutFrappe" />
       </div>
       <div class="row items-center rp-toolbar-gap">
         <ConnectionStatus />

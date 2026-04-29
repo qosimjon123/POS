@@ -57,6 +57,9 @@ export default {
     tokenSectionSubtitle:
       'Логин и пароль на сервер → ключ (API token). Его шифрует ваш 6-значный PIN и кладёт в QR (1 мин). На входе по QR нужны тот же QR и PIN.',
     tokenGetToken: 'Получить токен',
+    tokenStep1Continue: 'Далее к PIN',
+    tokenStep1NetworkHint:
+      'Запрос к серверу выполняется только после ввода PIN и нажатия «Показать QR-код». На этом шаге данные никуда не отправляются.',
     tokenDemoHint:
       'Демо без бэкенда: логин «{login}», пароль «{password}». С реальным API подсказка скрыта.',
     tokenDemoFill: 'Подставить демо',
@@ -77,6 +80,8 @@ export default {
     tokenStartOver: 'С начала',
     tokenCryptoUnavailable: 'Шифрование недоступно в этом окружении (нужен HTTPS или localhost).',
     tokenQrBuildError: 'Не удалось сформировать QR. Попробуйте ещё раз.',
+    tokenQrPermissionError:
+      'Метод недоступен: на сервере не включён whitelist (@frappe.whitelist) или нужна предварительная авторизация. Попросите администратора проверить fadl_pos.api.login.login_with_qr.get_qr_data.',
   },
   tokenPairing: {
     pageTitle: 'Ключ и QR',

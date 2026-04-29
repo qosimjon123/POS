@@ -7,7 +7,7 @@
     <q-form
       v-if="step === 1"
       class="rp-token-card column"
-      @submit.prevent="onFetchToken"
+      @submit.prevent="pairing.submitCredentials"
       autocomplete="off"
     >
       <div class="q-mb-sm">
@@ -16,30 +16,6 @@
         </h2>
         <p class="rp-token-subtitle">{{ t('login.tokenSectionSubtitle') }}</p>
       </div>
-
-      <q-banner
-        v-if="showDemoPairingHint"
-        rounded
-        dense
-        class="rp-token-demo-banner q-mb-sm"
-      >
-        <template #avatar>
-          <q-icon name="info" color="primary" />
-        </template>
-        <div class="text-body2">
-          {{ t('login.tokenDemoHint', { login: DEMO_PAIRING_LOGIN, password: DEMO_PAIRING_PASSWORD }) }}
-        </div>
-        <template #action>
-          <q-btn
-            flat
-            dense
-            no-caps
-            color="primary"
-            :label="t('login.tokenDemoFill')"
-            @click="fillDemoCredentials"
-          />
-        </template>
-      </q-banner>
 
       <q-input
         v-model="credentialLogin"
@@ -50,7 +26,6 @@
         :label="t('login.loginLabel')"
         :rules="[(val) => !!val || t('login.required')]"
         lazy-rules
-        :disable="loading"
         @focus="onFieldFocus('login')"
         @blur="onFieldBlur"
       />
@@ -65,7 +40,6 @@
         :label="t('login.passwordLabel')"
         :rules="[(val) => !!val || t('login.required')]"
         lazy-rules
-        :disable="loading"
         @focus="onFieldFocus('password')"
         @blur="onFieldBlur"
       >
@@ -86,8 +60,7 @@
         no-caps
         class="rp-token-primary full-width q-mt-md"
         type="submit"
-        :loading="loading"
-        :label="t('login.tokenGetToken')"
+        :label="t('login.tokenStep1Continue')"
       />
     </q-form>
 
@@ -104,7 +77,7 @@
           round
           icon="arrow_back"
           :aria-label="t('login.tokenBackCredentials')"
-          @click="goBackToCredentials"
+          @click="pairing.goBackToCredentials"
         />
       </div>
 
@@ -132,7 +105,7 @@
         :disable="pin.length !== 6 || qrLoading"
         :loading="qrLoading"
         :label="t('login.tokenBuildQr')"
-        @click="onBuildQr"
+        @click="pairing.buildQr"
       />
     </div>
 
@@ -184,14 +157,14 @@
           icon="download"
           :label="t('login.tokenDownloadQr')"
           :disable="!qrDataUrl"
-          @click="downloadQrPng"
+          @click="pairing.downloadQrPng"
         />
         <q-btn
           flat
           no-caps
           class="col"
           :label="t('login.tokenStartOver')"
-          @click="fullReset"
+          @click="pairing.fullReset"
         />
       </div>
     </div>
@@ -199,132 +172,37 @@
 </template>
 
 <script setup lang="ts">
-import QRCode from 'qrcode';
-import { computed, onUnmounted, ref } from 'vue';
-import { useQuasar } from 'quasar';
+import { storeToRefs } from 'pinia';
+import { onUnmounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import RpNumericTouchpad from 'src/components/common/RpNumericTouchpad.vue';
 import { useRpKeyboard } from 'src/components/common/keyboard-inject';
-import { getFrappeApp } from 'src/api/frappeClient/backendClient';
-import { DEMO_PAIRING_LOGIN, DEMO_PAIRING_PASSWORD } from 'src/constants/demoPairingAccount';
-import { TOKEN_QR_TTL_MS, buildEncryptedQrPayload } from 'src/utils/pinQrCrypto';
+import { useTokenPairingStore } from 'src/stores/token-pairing';
 
-const $q = useQuasar();
 const { t } = useI18n();
+const pairing = useTokenPairingStore();
+const {
+  step,
+  qrLoading,
+  credentialLogin,
+  credentialPassword,
+  showPassword,
+  pin,
+  qrDataUrl,
+  secondsLeft,
+  timerProgress,
+} = storeToRefs(pairing);
 
 const kbd = useRpKeyboard();
 
-const step = ref<1 | 2 | 3>(1);
-const loading = ref(false);
-const qrLoading = ref(false);
-
-/** Поля только этой страницы — не связаны с формой входа в приложение. */
-const credentialLogin = ref('');
-const credentialPassword = ref('');
-const showPassword = ref(false);
-
-const showDemoPairingHint = computed(
-  () => !(import.meta.env.VITE_API_BASE as string | undefined)?.trim(),
-);
-
-function fillDemoCredentials() {
-  credentialLogin.value = DEMO_PAIRING_LOGIN;
-  credentialPassword.value = DEMO_PAIRING_PASSWORD;
-}
-
-/** Ключ с сервера (токен / API key), им шифруется PIN перед выводом в QR. */
-const sessionToken = ref('');
-const pin = ref('');
-const qrDataUrl = ref('');
-const expiresAt = ref(0);
-const secondsLeft = ref(0);
-
-let tickId: ReturnType<typeof setInterval> | null = null;
-
-const timerProgress = computed(() =>
-  Math.max(0, Math.min(1, secondsLeft.value / (TOKEN_QR_TTL_MS / 1000))),
-);
-
-function stopTicker() {
-  if (tickId !== null) {
-    clearInterval(tickId);
-    tickId = null;
-  }
-}
-
-function startTicker() {
-  stopTicker();
-  tickId = setInterval(() => {
-    const leftMs = expiresAt.value - Date.now();
-    secondsLeft.value = Math.max(0, Math.ceil(leftMs / 1000));
-    if (leftMs <= 0) {
-      stopTicker();
-      onQrExpired();
-    }
-  }, 250);
-}
-
-function onQrExpired() {
-  qrDataUrl.value = '';
-  sessionToken.value = '';
-  pin.value = '';
-  credentialLogin.value = '';
-  credentialPassword.value = '';
-  step.value = 1;
-  $q.notify({
-    type: 'warning',
-    message: t('login.tokenQrExpired'),
-    position: 'top',
-  });
-}
-
-function fullReset() {
-  stopTicker();
-  qrDataUrl.value = '';
-  sessionToken.value = '';
-  pin.value = '';
-  credentialLogin.value = '';
-  credentialPassword.value = '';
-  expiresAt.value = 0;
-  secondsLeft.value = 0;
-  step.value = 1;
-}
-
-function goBackToCredentials() {
-  stopTicker();
-  sessionToken.value = '';
-  pin.value = '';
-  qrDataUrl.value = '';
-  credentialPassword.value = '';
-  step.value = 1;
-}
-
-onUnmounted(() => {
-  stopTicker();
-  sessionToken.value = '';
-  pin.value = '';
-  qrDataUrl.value = '';
-  credentialPassword.value = '';
-  expiresAt.value = 0;
-});
+onUnmounted(() => pairing.dispose());
 
 function onFieldFocus(field: 'login' | 'password') {
-  if (field === 'login') {
-    kbd.bindInput(
-      () => credentialLogin.value,
-      (v) => {
-        credentialLogin.value = v;
-      },
-    );
-  } else {
-    kbd.bindInput(
-      () => credentialPassword.value,
-      (v) => {
-        credentialPassword.value = v;
-      },
-    );
-  }
+  kbd.bindInput(
+    () => (field === 'login' ? credentialLogin.value : credentialPassword.value),
+    (v) => (field === 'login' ? (credentialLogin.value = v) : (credentialPassword.value = v)),
+  );
   kbd.open();
 }
 
@@ -332,89 +210,6 @@ function onFieldBlur() {
   kbd.close();
   kbd.resetBinding();
 }
-
-async function onFetchToken() {
-  loading.value = true;
-  try {
-    const frappe = getFrappeApp();
-    if (!frappe) {
-      $q.notify({
-        type: 'negative',
-        message: t('login.tokenFetchError'),
-        position: 'top',
-      });
-      return;
-    }
-    await frappe.auth().loginWithUsernamePassword({
-      username: credentialLogin.value.trim(),
-      password: credentialPassword.value,
-    });
-    sessionToken.value = await frappe.auth().getLoggedInUser();
-    pin.value = '';
-    step.value = 2;
-  } catch (e) {
-    console.error(e);
-    $q.notify({
-      type: 'negative',
-      message: t('login.tokenFetchError'),
-      position: 'top',
-    });
-  } finally {
-    loading.value = false;
-  }
-}
-
-async function onBuildQr() {
-  if (!sessionToken.value || pin.value.length !== 6) return;
-  if (!globalThis.crypto?.subtle) {
-    $q.notify({
-      type: 'negative',
-      message: t('login.tokenCryptoUnavailable'),
-      position: 'top',
-    });
-    return;
-  }
-
-  qrLoading.value = true;
-  try {
-    const payload = await buildEncryptedQrPayload(sessionToken.value, pin.value);
-    const url = await QRCode.toDataURL(payload, {
-      width: 280,
-      margin: 2,
-      errorCorrectionLevel: 'M',
-      color: {
-        dark: $q.dark.isActive ? '#f5f5f5' : '#0a0a0a',
-        light: $q.dark.isActive ? '#1a1a1a' : '#ffffff',
-      },
-    });
-    qrDataUrl.value = url;
-    expiresAt.value = Date.now() + TOKEN_QR_TTL_MS;
-    secondsLeft.value = Math.ceil(TOKEN_QR_TTL_MS / 1000);
-    step.value = 3;
-    startTicker();
-    pin.value = '';
-    sessionToken.value = '';
-  } catch (e) {
-    console.error(e);
-    $q.notify({
-      type: 'negative',
-      message: t('login.tokenQrBuildError'),
-      position: 'top',
-    });
-  } finally {
-    qrLoading.value = false;
-  }
-}
-
-function downloadQrPng() {
-  if (!qrDataUrl.value) return;
-  const a = document.createElement('a');
-  a.href = qrDataUrl.value;
-  a.download = `restropos-token-qr-${Date.now()}.png`;
-  a.rel = 'noopener';
-  a.click();
-}
-
 </script>
 
 <style scoped lang="scss">
@@ -514,6 +309,11 @@ function downloadQrPng() {
   background: color-mix(in srgb, var(--rp-primary) 8%, var(--rp-card));
   border: 1px solid var(--rp-border);
   color: var(--rp-foreground);
+}
+
+.rp-token-network-hint {
+  color: var(--rp-muted-foreground);
+  line-height: 1.4;
 }
 
 @media (max-width: 599px) {

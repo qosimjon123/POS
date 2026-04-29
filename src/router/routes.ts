@@ -17,16 +17,6 @@ const routes: RouteRecordRaw[] = [
         name: 'token-pairing',
         component: () => import('pages/TokenPairingPage.vue'),
       },
-      {
-        path: 'pos-ui-playground',
-        name: 'pos-ui-playground',
-        component: () => import('pages/pos-ui-playground/PosUiPlaygroundHub.vue'),
-      },
-      {
-        path: 'pos-ui-playground/view/:slug',
-        name: 'pos-ui-playground-stub',
-        component: () => import('pages/pos-ui-playground/PosUiPlaygroundStub.vue'),
-      },
     ],
   },
 
