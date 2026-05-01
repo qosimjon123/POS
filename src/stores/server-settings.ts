@@ -2,7 +2,7 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { LocalStorage } from 'quasar';
 
-import { SERVER_BASE_URL_STORAGE_KEY } from 'src/config/server';
+import { STORAGE_KEYS } from 'src/config/storage';
 import { useConnectionStore } from './connection';
 
 function normalizeBackendUrl(raw: string): string {
@@ -19,7 +19,7 @@ export const useServerSettingsStore = defineStore('server-settings', () => {
 
   const baseUrl = ref(
     normalizeBackendUrl(
-      LocalStorage.getItem<string>(SERVER_BASE_URL_STORAGE_KEY) ?? import.meta.env.VITE_FRAPPE_URL,
+      LocalStorage.getItem<string>(STORAGE_KEYS.SERVER_BASE_URL) ?? import.meta.env.VITE_FRAPPE_URL,
     ),
   );
 
@@ -38,7 +38,7 @@ export const useServerSettingsStore = defineStore('server-settings', () => {
   function setBaseUrl(raw: string) {
     const n = normalizeBackendUrl(raw);
     baseUrl.value = n;
-    LocalStorage.set(SERVER_BASE_URL_STORAGE_KEY, n);
+    LocalStorage.set(STORAGE_KEYS.SERVER_BASE_URL, n);
   }
 
   function openSettingsDialog() {
@@ -49,7 +49,7 @@ export const useServerSettingsStore = defineStore('server-settings', () => {
 
   function closeSettingsDialog() {
     settingsDialogOpen.value = false;
-    settingsUrlInvalid.value = false;
+    settingsUrlInvalid.value = false; 
   }
 
   async function saveSettingsFromDialog() {

@@ -109,12 +109,11 @@
 
 <script setup lang="ts">
 import { Capacitor } from '@capacitor/core';
-import { storeToRefs } from 'pinia';
 import { useQuasar } from 'quasar';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-import { useScannerStore } from 'src/stores/scanner';
+import { useScanner } from 'src/stores/scanner';
 
 export type PosCustomerCreatePayload = {
   customer_name: string;
@@ -130,8 +129,8 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const $q = useQuasar();
-const scanner = useScannerStore();
-const { webPreviewVideoTarget } = storeToRefs(scanner);
+const scanner = useScanner();
+const { webPreviewVideoTarget } = scanner;
 
 const scanVideoRef = ref<HTMLVideoElement | null>(null);
 const isNative = Capacitor.isNativePlatform();
@@ -164,25 +163,18 @@ watch(
   { immediate: true },
 );
 
-function onScanCard() {
+async function onScanCard() {
   const fromHeader = scanner.defaultWebScanVideo;
   const el = (fromHeader ?? scanVideoRef.value) ?? null;
-  void scanner.startScan(el, undefined, 'customerCreate');
+  const result = await scanner.startScan(el);
+  if (result?.value) {
+    card_number.value = result.value.trim();
+  }
 }
 
 function onStopScan() {
   void scanner.stopScan();
 }
-
-watch(
-  () => scanner.lastResult,
-  (r) => {
-    if (!r?.value) return;
-    if (scanner.lastIntent !== 'customerCreate') return;
-    card_number.value = r.value.trim();
-    scanner.clearLastResult();
-  },
-);
 
 function submit() {
   if (!canSubmit.value) return;

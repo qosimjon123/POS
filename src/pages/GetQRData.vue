@@ -14,7 +14,7 @@
 
     <main class="rp-token-pairing-main col flex flex-center">
       <RpKeyboard type="full" position="floating">
-        <TokenPairingLoginMethod />
+        <GetQRData />
       </RpKeyboard>
     </main>
   </q-page>
@@ -24,7 +24,7 @@
 import { useI18n } from 'vue-i18n';
 
 import RpKeyboard from 'src/components/common/RpKeyboard.vue';
-import TokenPairingLoginMethod from 'src/components/login/TokenPairingLoginMethod.vue';
+import GetQRData from 'src/components/login/GetQRData.vue';
 
 const { t } = useI18n();
 </script>

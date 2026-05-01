@@ -87,7 +87,7 @@ import { useQuasar } from 'quasar';
 import PosCustomerCreateForm, {
   type PosCustomerCreatePayload,
 } from 'src/components/pos/PosCustomerCreateForm.vue';
-import { useScannerStore } from 'src/stores/scanner';
+import { useScanner } from 'src/stores/scanner';
 
 const vTouchPan = TouchPan;
 
@@ -99,7 +99,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const $q = useQuasar();
-const scanner = useScannerStore();
+const scanner = useScanner();
 
 const isSheet = computed(() => $q.screen.lt.md);
 
@@ -156,7 +156,7 @@ async function onDialogShow() {
 
 function onDialogHide() {
   dragY.value = 0;
-  scanner.clearLastResult();
+  scanner.resetRuntimeState();
 }
 
 function onSave(payload: PosCustomerCreatePayload) {

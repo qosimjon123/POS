@@ -2,7 +2,7 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { LocalStorage } from 'quasar';
 
-import { LOCALE_STORAGE_KEY } from 'src/config/locale';
+import { STORAGE_KEYS } from 'src/config/storage';
 import { i18n, isMessageLanguage, type MessageLanguages } from 'src/i18n';
 
 type I18nLocaleTarget = {
@@ -31,7 +31,7 @@ export const useLocaleStore = defineStore('locale', () => {
   const locale = ref<MessageLanguages>('ru-RU');
 
   function hydrateFromStorage() {
-    const saved = LocalStorage.getItem<string>(LOCALE_STORAGE_KEY);
+    const saved = LocalStorage.getItem<string>(STORAGE_KEYS.LOCALE);
     if (saved && isMessageLanguage(saved)) {
       locale.value = saved;
       applyLocale(saved);
@@ -42,7 +42,7 @@ export const useLocaleStore = defineStore('locale', () => {
 
   function setLocale(code: MessageLanguages) {
     locale.value = code;
-    LocalStorage.set(LOCALE_STORAGE_KEY, code);
+    LocalStorage.set(STORAGE_KEYS.LOCALE, code);
     applyLocale(code);
   }
 

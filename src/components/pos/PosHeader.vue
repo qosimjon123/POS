@@ -193,7 +193,7 @@ import SettingsButton from 'src/components/system/SettingsButton.vue';
 import ThemeToggle from 'src/components/system/ThemeToggle.vue';
 import TimeDisplay from 'src/components/system/TimeDisplay.vue';
 import { useRegisterContextStore } from 'src/stores/register-context';
-import { useScannerStore } from 'src/stores/scanner';
+import { useScanner } from 'src/stores/scanner';
 import { useTimeStore } from 'src/stores/time';
 
 import type { PosHeaderLayout } from 'src/components/pos/pos-layout';
@@ -220,8 +220,8 @@ const search = defineModel<string>('search', { required: true });
 
 const $q = useQuasar();
 const { t, locale } = useI18n();
-const scanner = useScannerStore();
-const { webPreviewVideoTarget } = storeToRefs(scanner);
+const scanner = useScanner();
+const { webPreviewVideoTarget } = scanner;
 const registerContext = useRegisterContextStore();
 const { selectedRegister } = storeToRefs(registerContext);
 const timeStore = useTimeStore();
@@ -303,15 +303,6 @@ onUnmounted(() => {
   void scanner.stopScan();
 });
 
-watch(
-  () => scanner.lastResult,
-  (r) => {
-    if (!r?.value) return;
-    if (scanner.lastIntent !== 'catalog') return;
-    search.value = r.value;
-  },
-);
-
 function onSearchFocus() {
   kbd.bindInput(
     () => search.value,
@@ -327,8 +318,11 @@ function onSearchBlur() {
   kbd.resetBinding();
 }
 
-function onScanClick() {
-  void scanner.startScan(scanVideoRef.value ?? null, undefined, 'catalog');
+async function onScanClick() {
+  const result = await scanner.startScan(scanVideoRef.value ?? null);
+  if (result?.value) {
+    search.value = result.value;
+  }
 }
 
 function onStopScan() {

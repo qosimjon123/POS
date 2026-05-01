@@ -25,7 +25,7 @@
         :name="1"
         :title="t('login.mobileStepQrTitle')"
         icon="qr_code_scanner"
-        :done="scanned"
+        :done="loginQrCaptured"
       >
         <QrLoginScanPanel />
       </q-step>
@@ -53,11 +53,10 @@ const $q = useQuasar();
 const isMobile = computed(() => $q.screen.lt.sm);
 
 const login = useLoginStore();
-const { scanned, mobileStep } = storeToRefs(login);
+const { mobileStep, loginQrCaptured } = storeToRefs(login);
 
-
-watch([scanned, isMobile], () => {
-  if (scanned.value && isMobile.value) {
+watch([loginQrCaptured, isMobile], () => {
+  if (loginQrCaptured.value && isMobile.value) {
     login.setMobileStep(2);
   }
 });

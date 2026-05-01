@@ -66,14 +66,13 @@
 </template>
 
 <script setup lang="ts">
-import axios from 'axios';
 import { storeToRefs } from 'pinia';
 import { useQuasar } from 'quasar';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
-
 import { useRpKeyboard } from 'src/components/common/keyboard-inject';
 import { useLoginStore } from 'src/stores/login';
+import { loginWithPassword } from 'src/api/login/loginWithPassword';
 
 const router = useRouter();
 const $q = useQuasar();
@@ -111,22 +110,10 @@ function onFieldBlur() {
 async function onSubmit() {
   if (!email.value?.trim() || !password.value) return;
 
-    try {
-      await login.loginWithPassword(email.value, password.value);
-    } catch (e: unknown) {
-      let msg = t('login.signInFailed');
-      if (axios.isAxiosError(e)) {
-        const data = e.response?.data as { message?: string } | undefined;
-        if (typeof data?.message === 'string' && data.message.trim()) {
-          msg = data.message;
-        }
-      } else if (e instanceof Error && e.message) {
-        msg = e.message;
-      }
-      $q.notify({ type: 'negative', message: msg });
-      return;
-    }
+  const ok = await loginWithPassword(email.value.trim(), password.value);
+  if (!ok) return;
 
+  
   void router.push({ name: 'register-select' });
 }
 </script>

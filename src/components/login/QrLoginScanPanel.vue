@@ -83,16 +83,17 @@
 
 <script setup lang="ts">
 import { Capacitor } from '@capacitor/core';
-import { storeToRefs } from 'pinia';
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-import { useScannerStore } from 'src/stores/scanner';
+import { useScanner } from 'src/stores/scanner';
+import { useLoginStore } from 'src/stores/login';
 
 const { t } = useI18n();
 
-const scanner = useScannerStore();
-const { webPreviewVideoTarget } = storeToRefs(scanner);
+const login = useLoginStore();
+const scanner = useScanner();
+const { webPreviewVideoTarget } = scanner;
 const videoRef = ref<HTMLVideoElement | null>(null);
 const fileInputRef = ref<HTMLInputElement | null>(null);
 const fileBusy = ref(false);
@@ -114,7 +115,9 @@ onUnmounted(() => {
 });
 
 async function onStartScan() {
-  await scanner.startScan(videoRef.value ?? null, undefined, 'login');
+  const result = await scanner.startScan(videoRef.value ?? null);
+  const payload = result?.value?.trim();
+  if (payload) login.setQrLoginPayload(payload);
 }
 
 function onStopScan() {
@@ -132,7 +135,9 @@ async function onFileChange(ev: Event) {
   if (!file) return;
   fileBusy.value = true;
   try {
-    await scanner.scanFromFile(file, undefined, 'login');
+    const result = await scanner.scanFromFile(file);
+    const payload = result?.value?.trim();
+    if (payload) login.setQrLoginPayload(payload);
   } finally {
     fileBusy.value = false;
   }

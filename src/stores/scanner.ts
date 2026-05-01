@@ -2,7 +2,6 @@ import { Capacitor } from '@capacitor/core';
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 import { Notify } from 'quasar';
 import type { QNotifyCreateOptions } from 'quasar';
-import { defineStore } from 'pinia';
 import { computed, nextTick, ref, shallowRef } from 'vue';
 
 import { i18n } from 'src/i18n';
@@ -19,8 +18,6 @@ import {
 } from 'src/modules/scanner/scan-session';
 import { readBarcodeFromImageFile } from 'src/modules/scanner/read-from-file';
 import type { UnifiedScanResult } from 'src/modules/scanner/types';
-
-export type ScannerIntent = 'login' | 'catalog' | 'customer' | 'customerCreate';
 
 type ScannerNotifyOpts = QNotifyCreateOptions & {
   /** Tap banner to dismiss (off when you pass custom `actions`, e.g. «Настройки»). */
@@ -96,30 +93,22 @@ function notifyGoogleModuleUnavailable() {
   });
 }
 
-export const useScannerStore = defineStore('scanner', () => {
-  const supported = ref(false);
-  const scanning = ref(false);
-  const lastResult = ref<UnifiedScanResult | null>(null);
-  const lastIntent = ref<ScannerIntent | null>(null);
-  const errorMessage = ref<string | null>(null);
-  let stopSession: (() => Promise<void>) | null = null;
+const supported = ref(false);
+const scanning = ref(false);
+const errorMessage = ref<string | null>(null);
+let stopSession: (() => Promise<void>) | null = null;
 
-  /** Шапка POS регистрирует `<video>`; пикер клиента может вызвать скан без своего элемента. */
-  const defaultWebScanVideo = shallowRef<HTMLVideoElement | null>(null);
-  /** Какой `<video>` сейчас получает stream (чтобы не показывать два полноэкранных превью). */
-  const webPreviewVideoTarget = shallowRef<HTMLVideoElement | null>(null);
+/** Шапка POS регистрирует `<video>`; пикер клиента может вызвать скан без своего элемента. */
+const defaultWebScanVideo = shallowRef<HTMLVideoElement | null>(null);
+/** Какой `<video>` сейчас получает stream (чтобы не показывать два полноэкранных превью). */
+const webPreviewVideoTarget = shallowRef<HTMLVideoElement | null>(null);
 
-  const needsVideoPreview = computed(
-    () => !Capacitor.isNativePlatform() && scanning.value,
-  );
+const needsVideoPreview = computed(
+  () => !Capacitor.isNativePlatform() && scanning.value,
+);
 
   function setDefaultWebScanVideo(el: HTMLVideoElement | null) {
     defaultWebScanVideo.value = el;
-  }
-
-  function setResult(result: UnifiedScanResult, intent: ScannerIntent | null) {
-    lastIntent.value = intent;
-    lastResult.value = result;
   }
 
   async function init() {
@@ -139,15 +128,12 @@ export const useScannerStore = defineStore('scanner', () => {
   async function startScan(
     videoElement?: HTMLVideoElement | null,
     runtimeOverride?: Partial<ScannerRuntimeOptions>,
-    intent: ScannerIntent = 'catalog',
-  ) {
+  ): Promise<UnifiedScanResult | null> {
     if (!Capacitor.isNativePlatform() && scanning.value && stopSession) {
       await stopSession();
       stopSession = null;
     }
 
-    lastResult.value = null;
-    lastIntent.value = intent;
     errorMessage.value = null;
     scanning.value = true;
 
@@ -158,26 +144,24 @@ export const useScannerStore = defineStore('scanner', () => {
         const { supported: ok } = await BarcodeScanner.isSupported();
         if (!ok) {
           notifyNotSupported();
-          return;
+          return null;
         }
 
         const permOk = await ensureNativeScannerPermissions();
         if (!permOk) {
           notifyPermissionDenied();
-          return;
+          return null;
         }
 
         if (Capacitor.getPlatform() === 'android') {
           const moduleOk = await ensureAndroidGoogleScanModule();
           if (!moduleOk) {
             notifyGoogleModuleUnavailable();
-            return;
+            return null;
           }
         }
 
-        const result = await runNativeGoogleScan(runtime);
-        if (result) setResult(result, intent);
-        return;
+        return await runNativeGoogleScan(runtime);
       }
 
       await nextTick();
@@ -187,7 +171,7 @@ export const useScannerStore = defineStore('scanner', () => {
       const webPerm = await ensureWebCameraPermission();
       if (!webPerm) {
         notifyWebCameraDenied();
-        return;
+        return null;
       }
 
       const resolved =
@@ -196,17 +180,25 @@ export const useScannerStore = defineStore('scanner', () => {
           : defaultWebScanVideo.value;
       if (!resolved) {
         errorMessage.value = i18n.global.t('scanner.unexpectedError');
-        return;
+        return null;
       }
 
       webPreviewVideoTarget.value = resolved;
 
-      try {
-        stopSession = await startBarcodeScan({
+      return await new Promise<UnifiedScanResult | null>((resolve) => {
+        let settled = false;
+        const settle = (result: UnifiedScanResult | null) => {
+          if (settled) return;
+          settled = true;
+          resolve(result);
+        };
+
+        void startBarcodeScan({
           ...(runtimeOverride ? { runtime: runtimeOverride } : {}),
           videoElement: resolved,
           onResult: (r) => {
-            setResult(r, intent);
+            settle(r);
+            void stopScan();
           },
           onError: () => {
             errorMessage.value = i18n.global.t('scanner.unexpectedError');
@@ -215,19 +207,27 @@ export const useScannerStore = defineStore('scanner', () => {
             scanning.value = false;
             stopSession = null;
             webPreviewVideoTarget.value = null;
+            settle(null);
           },
-        });
-      } catch (e) {
-        webPreviewVideoTarget.value = null;
-        const msg = e instanceof Error ? e.message : String(e);
-        if (msg === 'WEB_CAMERA_PERMISSION_DENIED') {
-          notifyWebCameraDenied();
-        } else {
-          errorMessage.value = i18n.global.t('scanner.unexpectedError');
-        }
-      }
+        })
+          .then((stop) => {
+            stopSession = stop;
+          })
+          .catch((e: unknown) => {
+            webPreviewVideoTarget.value = null;
+            const msg = e instanceof Error ? e.message : String(e);
+            if (msg === 'WEB_CAMERA_PERMISSION_DENIED') {
+              notifyWebCameraDenied();
+            } else {
+              errorMessage.value = i18n.global.t('scanner.unexpectedError');
+            }
+            scanning.value = false;
+            settle(null);
+          });
+      });
     } catch {
       errorMessage.value = i18n.global.t('scanner.unexpectedError');
+      return null;
     } finally {
       if (Capacitor.isNativePlatform()) {
         scanning.value = false;
@@ -249,43 +249,52 @@ export const useScannerStore = defineStore('scanner', () => {
     webPreviewVideoTarget.value = null;
   }
 
-  function clearLastResult() {
-    lastResult.value = null;
-    lastIntent.value = null;
+  function resetRuntimeState() {
+    errorMessage.value = null;
+    void stopScan();
   }
 
   async function scanFromFile(
     file: File,
     runtimeOverride?: Partial<ScannerRuntimeOptions>,
-    intent: ScannerIntent = 'login',
-  ) {
+  ): Promise<UnifiedScanResult | null> {
     errorMessage.value = null;
     try {
       const result = await readBarcodeFromImageFile(file, runtimeOverride);
       if (result) {
-        setResult(result, intent);
+        return result;
       } else {
         errorMessage.value = i18n.global.t('scanner.fileNoBarcode');
       }
     } catch {
       errorMessage.value = i18n.global.t('scanner.fileReadError');
     }
+    return null;
   }
 
+export function useScanner() {
   return {
-    supported,
-    scanning,
-    lastResult,
-    lastIntent,
-    errorMessage,
-    needsVideoPreview,
-    defaultWebScanVideo,
+    get supported() {
+      return supported.value;
+    },
+    get scanning() {
+      return scanning.value;
+    },
+    get errorMessage() {
+      return errorMessage.value;
+    },
+    get needsVideoPreview() {
+      return needsVideoPreview.value;
+    },
+    get defaultWebScanVideo() {
+      return defaultWebScanVideo.value;
+    },
     webPreviewVideoTarget,
     init,
     startScan,
     stopScan,
-    clearLastResult,
+    resetRuntimeState,
     scanFromFile,
     setDefaultWebScanVideo,
   };
-});
+}

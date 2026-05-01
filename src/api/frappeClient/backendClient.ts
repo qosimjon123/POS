@@ -1,9 +1,20 @@
-import type { FrappeApp } from 'frappe-js-sdk';
+import { FrappeApp } from 'frappe-js-sdk';
 import { useServerSettingsStore } from 'src/stores/server-settings';
 
-import { createFrappeApp } from './transport';
+import { attachFrappeUnauthorizedInterceptor, attachRawAuthorizationHeaderInterceptor } from './frappeSessionInterceptor';
 
 let frappeApp: FrappeApp | null = null;
+
+
+
+function createFrappeApp(url: string): FrappeApp {
+  const app = new FrappeApp(url);
+
+  attachRawAuthorizationHeaderInterceptor(app.axios);
+  attachFrappeUnauthorizedInterceptor(app.axios);
+
+  return app;
+}
 
 export function resetFrappeApp(): void {
   frappeApp = null;

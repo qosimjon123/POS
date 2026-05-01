@@ -1,112 +1,81 @@
 import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
-import {
-  getLoggedInUsername,
-  loginWithUsernamePassword,
-  logoutCurrentUser,
-} from 'src/api/frappeClient/authClient';
-import { resetFrappeApp } from 'src/api/frappeClient/backendClient';
-import { createSingleFlight } from 'src/utils/singleFlight';
+import * as CryptoJS from 'crypto-js';
+import { Preferences } from '@capacitor/preferences';
+import { STORAGE_KEYS } from 'src/config/storage';
 
 export type LoginMode = 'qr' | 'email';
 
+const ENCRYPTION_KEY = 'encryption_key';
+
 export const useLoginStore = defineStore('login', () => {
   const mode = ref<LoginMode>('qr');
-  /** Имя пользователя Frappe после успешного `loginWithFrappe` (cookie-сессия). */
-  const frappeUser = ref<string | null>(null);
-  const authReady = ref(false);
-  const authChecking = ref(false);
-  const refreshSessionFlight = createSingleFlight<boolean>();
+  const token = ref<string | null>(null);
+  const isLoggedIn = computed(() => token.value !== null);
 
-  const isLoggedIn = computed(() => frappeUser.value !== null);
-
-  function normalizeFrappeUser(user: string | null): string | null {
-    if (!user || user === 'Guest') return null;
-    return user;
-  }
-
-  function markLoggedOut() {
-    frappeUser.value = null;
-    authReady.value = true;
-  }
-
-  /**
-   * Логин через Frappe `/api/method/login` (frappe-js-sdk).
-   * Нужен URL: из настроек сервера или `VITE_FRAPPE_URL`; иначе метод ничего не делает.
-   */
-  async function loginWithPassword(username: string, password: string): Promise<void> {
-    resetFrappeApp();
-    const user = normalizeFrappeUser(await loginWithUsernamePassword(username, password));
-    if (!user) {
-      markLoggedOut();
-      throw new Error('Not authenticated');
-    }
-    frappeUser.value = user;
-    authReady.value = true;
-  }
-
-
-  async function logoutFrappe(): Promise<void> {
-    await logoutCurrentUser();
-    markLoggedOut();
-  }
-
-  async function refreshSession(): Promise<boolean> {
-    return refreshSessionFlight.run(async () => {
-      authChecking.value = true;
-      try {
-        frappeUser.value = normalizeFrappeUser(await getLoggedInUsername());
-        authReady.value = true;
-        return frappeUser.value !== null;
-      } catch {
-        markLoggedOut();
-        return false;
-      } finally {
-        authChecking.value = false;
-      }
+  /** Сохранить учётные данные: полное значение заголовка `Authorization` с сервера (напр. `Basic …`). */
+  async function setToken(plainToken: string) {
+    token.value = plainToken;
+    const encryptedToken = CryptoJS.AES.encrypt(plainToken, ENCRYPTION_KEY).toString();
+    await Preferences.set({
+      key: STORAGE_KEYS.LOGIN_TOKEN,
+      value: encryptedToken,
     });
   }
 
-  async function ensureSession(): Promise<boolean> {
-    if (authReady.value) return isLoggedIn.value;
-    return refreshSession();
+  /** Прочитать из Preferences и заполнить `token` (вызывать при старте и при явном обновлении). */
+  async function hydrateTokenFromStorage() {
+    const { value } = await Preferences.get({ key: STORAGE_KEYS.LOGIN_TOKEN });
+    if (!value) {
+      token.value = null;
+      return;
+    }
+    try {
+      const plain = CryptoJS.AES.decrypt(value, ENCRYPTION_KEY).toString(CryptoJS.enc.Utf8);
+      token.value = plain || null;
+    } catch {
+      token.value = null;
+    }
   }
 
-  function handleAuthFailure() {
-    markLoggedOut();
+  /** Асинхронно синхронизировать с хранилищем и вернуть токен. */
+  async function getToken(): Promise<string | null> {
+    await hydrateTokenFromStorage();
+    return token.value;
   }
 
-  const scanned = ref(false);
-  /** JSON-строка конверта v1 со страницы «Ключ и QR» (после скана / файла). */
-  const qrPairingEnvelope = ref<string | null>(null);
+  async function clearToken() {
+    token.value = null;
+    await Preferences.remove({ key: STORAGE_KEYS.LOGIN_TOKEN });
+  }
+
+
   const pin = ref('');
+  const qrLoginPayload = ref('');
+  const loginQrCaptured = computed(() => qrLoginPayload.value.trim().length > 0);
   const mobileStep = ref(1);
 
   const email = ref('');
   const password = ref('');
   const showPassword = ref(false);
 
-  function resetQrFlow() {
-    scanned.value = false;
-    qrPairingEnvelope.value = null;
+  function resetQrLoginPairing() {
     pin.value = '';
+    qrLoginPayload.value = '';
     mobileStep.value = 1;
+  }
+
+  function setQrLoginPayload(payload: string) {
+    pin.value = '';
+    qrLoginPayload.value = payload.trim();
   }
 
   function setMode(next: LoginMode) {
     if (next === mode.value) return;
     if (mode.value === 'qr' && next === 'email') {
-      resetQrFlow();
+      resetQrLoginPairing();
     }
     mode.value = next;
-  }
-
-  function setScanned(value: boolean) {
-    scanned.value = value;
-  }
-
-  function setQrPairingEnvelope(raw: string | null) {
-    qrPairingEnvelope.value = raw;
   }
 
   function setPin(value: string) {
@@ -119,27 +88,23 @@ export const useLoginStore = defineStore('login', () => {
 
   return {
     mode,
-    frappeUser,
-    authReady,
-    authChecking,
+    token,
     isLoggedIn,
-    loginWithPassword,
-    logoutFrappe,
-    refreshSession,
-    ensureSession,
-    handleAuthFailure,
-    scanned,
-    qrPairingEnvelope,
+    clearToken,
     pin,
+    qrLoginPayload,
+    loginQrCaptured,
     mobileStep,
     email,
     password,
     showPassword,
     setMode,
-    setScanned,
-    setQrPairingEnvelope,
+    setQrLoginPayload,
     setPin,
     setMobileStep,
-    resetQrFlow,
+    resetQrLoginPairing,
+    setToken,
+    getToken,
+    hydrateTokenFromStorage,
   };
 });

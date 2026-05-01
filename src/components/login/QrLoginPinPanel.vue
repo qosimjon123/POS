@@ -4,7 +4,7 @@
       <div class="rp-pin-title-wrap">
         <p class="rp-pin-title">
           {{
-            scanned ? t('login.pinEnterTitle') : t('login.pinLockedTitle')
+            loginQrCaptured ? t('login.pinEnterTitle') : t('login.pinLockedTitle')
           }}
         </p>
       </div>
@@ -19,7 +19,7 @@
         :key="i"
         class="rp-pin-dot"
         :class="{
-          'rp-pin-dot--filled': scanned && pin.length >= i,
+          'rp-pin-dot--filled': loginQrCaptured && pin.length >= i,
         }"
       />
     </div>
@@ -27,7 +27,7 @@
     <RpNumericTouchpad
       v-model="pin"
       class="rp-pin-numpad"
-      :disabled="!scanned || verifying"
+      :disabled="!loginQrCaptured || verifying"
       :max-length="6"
       size="lg"
       shape="circle"
@@ -38,36 +38,37 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia';
 import { ref, watch } from 'vue';
-import { useQuasar } from 'quasar';
 import { useI18n } from 'vue-i18n';
-
+import { useRouter } from 'vue-router';
 import RpNumericTouchpad from 'src/components/common/RpNumericTouchpad.vue';
 import { useLoginStore } from 'src/stores/login';
+import { loginWithQR } from 'src/api/login/loginWithQR';
 
 const { t } = useI18n();
-const $q = useQuasar();
-
+const router = useRouter();
 const login = useLoginStore();
-const { scanned, pin, qrPairingEnvelope } = storeToRefs(login);
+const { pin, qrLoginPayload, loginQrCaptured } = storeToRefs(login);
 
 const verifying = ref(false);
 
-watch(pin, (p) => {
-  if (p.length !== 6 || !scanned.value || verifying.value) return;
-  const raw = qrPairingEnvelope.value;
+watch(pin, async (p) => {
+  if (p.length !== 6 || !loginQrCaptured.value || verifying.value) return;
+  const raw = qrLoginPayload.value.trim();
   if (!raw) return;
 
-  if (!globalThis.crypto?.subtle) {
-    $q.notify({
-      type: 'negative',
-      message: t('login.tokenCryptoUnavailable'),
-      position: 'top',
-    });
-    return;
-  }
-
   verifying.value = true;
+  try {
+    const ok = await loginWithQR(raw, pin.value);
+    if (!ok) {
+      login.setPin('');
+      return;
+    }
 
+    login.resetQrLoginPairing();
+    void router.push({ name: 'register-select' });
+  } finally {
+    verifying.value = false;
+  }
 });
 </script>
 

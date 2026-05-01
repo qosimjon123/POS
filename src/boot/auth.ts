@@ -1,23 +1,25 @@
 import { defineBoot } from '#q-app/wrappers';
-
-import { configureFrappeAuthFailureHandler } from 'src/api/frappeClient/authSessionAdapter';
+import { configureFrappeSessionRecovery } from 'src/api/frappeClient/frappeSessionInterceptor';
+import { resetFrappeApp } from 'src/api/frappeClient/backendClient';
 import { useLoginStore } from 'src/stores/login';
-import { useRegisterContextStore } from 'src/stores/register-context';
 
-export default defineBoot(({ router, store }) => {
-  configureFrappeAuthFailureHandler(() => {
-    const loginStore = useLoginStore(store);
-    const registerStore = useRegisterContextStore(store);
+export default defineBoot(async ({ store, router }) => {
+  const loginStore = useLoginStore(store);
 
-    loginStore.handleAuthFailure();
-    registerStore.clearSelection();
-
-    const current = router.currentRoute.value;
-    if (current.meta.public || current.name === 'login') return;
-
-    void router.replace({
-      name: 'login',
-      query: { redirect: current.fullPath },
-    });
+  configureFrappeSessionRecovery({
+    clearSession: async () => {
+      await loginStore.clearToken();
+      resetFrappeApp();
+    },
+    navigateToLogin: () => {
+      const route = router.currentRoute.value;
+      if (route.name === 'login') return;
+      void router.replace({
+        name: 'login',
+        query: { redirect: route.fullPath },
+      });
+    },
   });
+
+  await loginStore.hydrateTokenFromStorage();
 });

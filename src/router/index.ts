@@ -7,7 +7,6 @@ import {
 } from 'vue-router';
 import routes from './routes';
 import { useLoginStore } from 'src/stores/login';
-import { useRegisterContextStore } from 'src/stores/register-context';
 
 /*
  * If not building with SSR mode, you can
@@ -35,14 +34,10 @@ export default defineRouter(function ({ store } /* { store, ssrContext } */) {
     history: createHistory(process.env.VUE_ROUTER_BASE),
   });
 
-  Router.beforeEach(async (to) => {
+  Router.beforeEach((to) => {
     const loginStore = useLoginStore(store);
-    if (to.meta.requiresAuth && !(await loginStore.ensureSession())) {
+    if (to.meta.requiresAuth && !(loginStore.isLoggedIn)) {
       return { name: 'login', query: { redirect: to.fullPath } };
-    }
-
-    if (to.meta.requiresRegister && !useRegisterContextStore(store).selectedRegister) {
-      return { name: 'register-select', query: { redirect: to.fullPath } };
     }
     return true;
   });

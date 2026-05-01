@@ -76,11 +76,10 @@
 
 <script setup lang="ts">
 import { Capacitor } from '@capacitor/core';
-import { storeToRefs } from 'pinia';
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-import { useScannerStore } from 'src/stores/scanner';
+import { useScanner } from 'src/stores/scanner';
 
 const PAGE = 5;
 /** Высота строки в списке (virtual scroll должен совпадать с CSS). */
@@ -93,8 +92,8 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const scanner = useScannerStore();
-const { webPreviewVideoTarget } = storeToRefs(scanner);
+const scanner = useScanner();
+const { webPreviewVideoTarget } = scanner;
 const scanVideoRef = ref<HTMLVideoElement | null>(null);
 const isNative = Capacitor.isNativePlatform();
 
@@ -142,32 +141,24 @@ function onVirtualScroll(details: {
   options.value = buffer.value.slice(0, next);
 }
 
-function onScan() {
+async function onScan() {
   const fromHeader = scanner.defaultWebScanVideo;
   const el = (fromHeader ?? scanVideoRef.value) ?? null;
-  void scanner.startScan(el, undefined, 'customer');
+  const result = await scanner.startScan(el);
+  const v = result?.value?.trim().toLowerCase();
+  if (!v) return;
+  const found =
+    MOCK.find(
+      (o) =>
+        o.value.toLowerCase() === v ||
+        o.label.toLowerCase().includes(v),
+    ) ?? null;
+  if (found) selected.value = found.value;
 }
 
 function onStopScan() {
   void scanner.stopScan();
 }
-
-watch(
-  () => scanner.lastResult,
-  (r) => {
-    if (!r?.value) return;
-    if (scanner.lastIntent !== 'customer') return;
-    const v = r.value.trim().toLowerCase();
-    const found =
-      MOCK.find(
-        (o) =>
-          o.value.toLowerCase() === v ||
-          o.label.toLowerCase().includes(v),
-      ) ?? null;
-    if (found) selected.value = found.value;
-    scanner.clearLastResult();
-  },
-);
 
 onMounted(() => {
   void scanner.init();

@@ -32,9 +32,9 @@ const routes: RouteRecordRaw[] = [
         meta: { requiresAuth: true, requiresRegister: true },
       },
       {
-        path: 'token-pairing',
-        name: 'token-pairing',
-        component: () => import('pages/TokenPairingPage.vue'),
+        path: 'get-qr',
+        name: 'get-qr',
+        component: () => import('pages/GetQRData.vue'),
         meta: { public: true },
       },
     ],
